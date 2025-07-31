@@ -53,7 +53,11 @@ from servlets.GalaxyAPI import (
     getWorkflowStatus,
     uploadFile,
     getUploadStatus,
-    testConnection
+    testConnection,
+    detectPairedReads,        # Add this
+    createPairedCollection,   # Add this
+    autoPairAllReads,         # Add this
+    getPairedReadPatterns     # Add this
 )
 
 # Import error handlers
@@ -526,3 +530,61 @@ if __name__ == '__main__':
         print("Galaksio Server")
         print("Use --start to start the server")
         print("Use --help for more options")
+
+# Add these new API routes in the setup_routes method
+        # API Routes - Paired Reads Handling
+        @self.app.route('/api/detect_paired_reads', methods=['POST'])
+        def detect_paired_reads():
+            """Detect paired-end reads in a Galaxy history."""
+            try:
+                result = detectPairedReads(request, settings)
+                return jsonify(result)
+            except Exception as e:
+                logger.error(f"Error in detect_paired_reads: {e}")
+                return jsonify({
+                    'success': False, 
+                    'error': str(e),
+                    'timestamp': datetime.now().isoformat()
+                }), 500
+        
+        @self.app.route('/api/create_paired_collection', methods=['POST'])
+        def create_paired_collection():
+            """Create a paired collection from detected paired reads."""
+            try:
+                result = createPairedCollection(request, settings)
+                return jsonify(result)
+            except Exception as e:
+                logger.error(f"Error in create_paired_collection: {e}")
+                return jsonify({
+                    'success': False, 
+                    'error': str(e),
+                    'timestamp': datetime.now().isoformat()
+                }), 500
+        
+        @self.app.route('/api/auto_pair_all_reads', methods=['POST'])
+        def auto_pair_all_reads():
+            """Automatically detect and pair all reads in a history."""
+            try:
+                result = autoPairAllReads(request, settings)
+                return jsonify(result)
+            except Exception as e:
+                logger.error(f"Error in auto_pair_all_reads: {e}")
+                return jsonify({
+                    'success': False, 
+                    'error': str(e),
+                    'timestamp': datetime.now().isoformat()
+                }), 500
+        
+        @self.app.route('/api/get_paired_read_patterns', methods=['GET'])
+        def get_paired_read_patterns():
+            """Get supported paired read patterns."""
+            try:
+                result = getPairedReadPatterns(request, settings)
+                return jsonify(result)
+            except Exception as e:
+                logger.error(f"Error in get_paired_read_patterns: {e}")
+                return jsonify({
+                    'success': False, 
+                    'error': str(e),
+                    'timestamp': datetime.now().isoformat()
+                }), 500
