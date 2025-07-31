@@ -1,61 +1,134 @@
-<div ng-controller="UserSessionController as controller" ng-init="isLogin=true;">
-	<form name="signForm" class="form-signin" novalidate ng-submit="controller.signFormSubmitHandler()">
-		<h3 class="form-signin-heading">{{(isLogin)?"Welcome back! Please Sign In":"Create your Galaxy account"}}</h3>
-		<hr class="colorgraph"><br>
-		<div class="well">
-			<p>This Galaksio instance is connected to the following Galaxy server:</p>
-			<code style="text-align: center;display: block;">
-				<a href="{{GALAXY_SERVER_URL}}">{{GALAXY_SERVER_URL}}</a>
-			</code>
-			<p>Start a new session using your Galaxy user and password as usual, or create a new account.</p>
-		</div>
-		<input name="email" type="email" class="form-control" ng-model="userInfo.email" placeholder="Email" required="" autofocus="" />
-		<span>
-			<span class="text-danger" ng-show="signForm.email.$error.required">Required!</span>
-			<span class="text-danger" ng-show="signForm.email.$error.email">Not valid email!</span>
-		</span>
+<div class="auth-container">
+    <div class="row justify-content-center align-items-center min-vh-100">
+        <div class="col-md-6 col-lg-5 col-xl-4">
+            <div class="auth-card">
+                <!-- Logo and Header -->
+                <div class="text-center mb-4">
+                    <img src="css/galaxy_logo2.png" alt="Galaksio Logo" height="50" class="mb-3">
+                    <h2 class="auth-title">{{(isLogin) ? "Welcome Back!" : "Create Account"}}</h2>
+                    <p class="auth-subtitle">
+                        Connected to Galaxy server: <strong>{{GALAXY_SERVER_URL}}</strong>
+                    </p>
+                </div>
 
-		<input name="username" type="text" class="form-control" placeholder="Your name" required="" style="margin-top: 10px;"
-		ng-model="userInfo.username"
-		ng-if="!isLogin"
-		ng-pattern="/^[a-z0-9\-]+$/"
-		/>
-		<span ng-if="!isLogin">
-			<span class="text-danger" ng-show="signForm.username.$error.required">Required!</span>
-			<span class="text-danger" ng-show="signForm.username.$error.pattern">Public name must contain only lower-case letters, numbers and '-'</span>
-		</span>
-		<input name="password" type="password" id="mainPass" class="form-control" placeholder="Password" style="margin-bottom: 0; margin-top: 20px;" required=""
-		ng-model="userInfo.password"
-		ng-minlength="6"
-		/>
-		<span ng-if="!isLogin">
-			<span class="text-danger" ng-show="signForm.password.$error.required">Required!</span>
-			<span class="text-danger" ng-show="signForm.password.$error.minlength">Password must be at least 6 characters.</span>
-		</span>
+                <!-- Auth Form -->
+                <form name="signForm" ng-submit="userSession.signFormSubmitHandler()" novalidate>
+                    <!-- Email Field -->
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email Address</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-envelope"></i>
+                            </span>
+                            <input type="email" 
+                                   class="form-control" 
+                                   id="email" 
+                                   name="email"
+                                   ng-model="userInfo.email"
+                                   required
+                                   placeholder="Enter your email">
+                        </div>
+                        <div class="invalid-feedback" ng-show="signForm.email.$touched && signForm.email.$invalid">
+                            <span ng-show="signForm.email.$error.required">Email is required</span>
+                            <span ng-show="signForm.email.$error.email">Valid email required</span>
+                        </div>
+                    </div>
 
-		<input name="passconfirm" type="password" class="form-control" placeholder="Repeat the password" style="margin-bottom: 0; margin-top: 10px;" required=""
-		ng-model="userInfo.passconfirm"
-		ng-init=""
-		ng-minlength="6"
-		ng-minlength="50"
-		ng-if="!isLogin"
-		ng-pwcheck="mainPass"
-		/>
-		<span ng-if="!isLogin">
-			<span class="text-danger" ng-show="signForm.passconfirm.$error.pwmatch">Passwords are different.</span>
-		</span>
-		<div style="margin-top: 30px;">
+                    <!-- Username Field (Sign Up Only) -->
+                    <div class="mb-3" ng-if="!isLogin">
+                        <label for="username" class="form-label">Username</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-user"></i>
+                            </span>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="username" 
+                                   name="username"
+                                   ng-model="userInfo.username"
+                                   ng-required="!isLogin"
+                                   placeholder="Choose a username">
+                        </div>
+                        <div class="invalid-feedback" ng-show="signForm.username.$touched && signForm.username.$invalid">
+                            Username is required
+                        </div>
+                    </div>
 
-			<!-- Oskar - Change Create new account to Galaxy link <a href="javascript:void(0);" class="text-info" ng-show="isLogin" ng-click="isLogin=false">Create an account</a> -->
-			<div style="margin-bottom: 20px">
-				<span>Don't have an account? No worries, register an account </span>
-				<a href="{{GALAXY_SERVER_URL}}" target="_blank" class="text-info" ng-show="isLogin">here</a>
-				<span>and come back here when you're done!</span>
-			</div>
-			<a href="javascript:void(0);" class="text-danger" ng-show="!isLogin" ng-click="isLogin=true">Cancel</a>
-			<button type="submit" class="btn btn-success btn-lg navbar-right" ng-disabled="signForm.$invalid">
-				<i class="fa fa-bolt fa-fw" ></i> Sign {{(isLogin)?"in":"up"}}
-			</button>
-		</div>
-	</form>
+                    <!-- Password Field -->
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-lock"></i>
+                            </span>
+                            <input type="password" 
+                                   class="form-control" 
+                                   id="password" 
+                                   name="password"
+                                   ng-model="userInfo.password"
+                                   required
+                                   ng-minlength="6"
+                                   placeholder="Enter your password">
+                        </div>
+                        <div class="invalid-feedback" ng-show="signForm.password.$touched && signForm.password.$invalid">
+                            <span ng-show="signForm.password.$error.required">Password is required</span>
+                            <span ng-show="signForm.password.$error.minlength">Password must be at least 6 characters</span>
+                        </div>
+                    </div>
+
+                    <!-- Confirm Password Field (Sign Up Only) -->
+                    <div class="mb-3" ng-if="!isLogin">
+                        <label for="confirmPassword" class="form-label">Confirm Password</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-lock"></i>
+                            </span>
+                            <input type="password" 
+                                   class="form-control" 
+                                   id="confirmPassword" 
+                                   name="confirmPassword"
+                                   ng-model="userInfo.passconfirm"
+                                   ng-required="!isLogin"
+                                   ng-pwcheck="userInfo.password"
+                                   placeholder="Confirm your password">
+                        </div>
+                        <div class="invalid-feedback" ng-show="signForm.confirmPassword.$touched && signForm.confirmPassword.$invalid">
+                            <span ng-show="signForm.confirmPassword.$error.required">Password confirmation is required</span>
+                            <span ng-show="signForm.confirmPassword.$error.pwmatch">Passwords do not match</span>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="d-grid">
+                        <button type="submit" 
+                                class="btn btn-primary btn-lg" 
+                                ng-disabled="signForm.$invalid">
+                            <i class="fas fa-sign-in-alt me-2"></i>
+                            {{(isLogin) ? "Sign In" : "Sign Up"}}
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Toggle Auth Mode -->
+                <div class="text-center mt-4">
+                    <p class="mb-0">
+                        {{(isLogin) ? "Don't have an account?" : "Already have an account?"}}
+                        <a href="#" ng-click="isLogin = !isLogin" class="auth-link">
+                            {{(isLogin) ? "Sign Up" : "Sign In"}}
+                        </a>
+                    </p>
+                </div>
+
+                <!-- Galaxy Registration Link -->
+                <div class="alert alert-info mt-4" ng-if="isLogin">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>New to Galaxy?</strong> 
+                    <a href="{{GALAXY_SERVER_URL}}/user/create" target="_blank" class="alert-link">
+                        Register a Galaxy account first
+                    </a>
+                    then come back to sign in.
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
