@@ -1,30 +1,30 @@
 #!/usr/bin/env python3
 """
 Galaksio Server - Main Flask Application
-Modern Galaxy Workflow Interface for Galaxy 25.0
-Enhanced with authentication, workflow tracking, file upload, and error handling
-
-(C) Copyright 2016 SLU Global Bioinformatics Centre, SLU
-(http://sgbc.slu.se) and the B3Africa Project (http://www.b3africa.org/).
-
-All rights reserved. This program and the accompanying materials
-are made available under the terms of the GNU Lesser General Public License
-(LGPL) version 3 which accompanies this distribution, and is available at
-http://www.gnu.org/licenses/lgpl.html
-
-This library is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-Lesser General Public License for more details.
-
-Contributors:
-Rafael Hernandez de Diego
-Tomas Klingstrom
-Erik Bongcam-Rudloff
-and others.
-
-Updated for Galaxy 25.0 compatibility and modern web standards
+Updated for Galaxy 25.0 with enhanced security and error handling
 """
+
+# (C) Copyright 2016 SLU Global Bioinformatics Centre, SLU
+# (http://sgbc.slu.se) and the B3Africa Project (http://www.b3africa.org/).
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the GNU Lesser General Public License
+# (LGPL) version 3 which accompanies this distribution, and is available at
+# http://www.gnu.org/licenses/lgpl.html
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
+#
+# Contributors:
+# Rafael Hernandez de Diego
+# Tomas Klingstrom
+# Erik Bongcam-Rudloff
+# and others.
+#
+# Updated for Galaxy 25.0 compatibility and modern web standards
+#
 
 import os
 import sys
@@ -46,7 +46,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # Import configuration
 from resources.galaxy_settings import settings
 
-# Import enhanced servlets
+# Import servlets
 from servlets.GalaxyAPI import (
     generateWorkflowReport,
     executeWorkflow,
@@ -54,10 +54,12 @@ from servlets.GalaxyAPI import (
     uploadFile,
     getUploadStatus,
     testConnection,
-    detectPairedReads,        # Add this
-    createPairedCollection,   # Add this
-    autoPairAllReads,         # Add this
-    getPairedReadPatterns     # Add this
+    detectPairedReads,
+    createPairedCollection,
+    autoPairAllReads,
+    getPairedReadPatterns,
+    getCompatibilityReport,
+    getHistoryContents
 )
 
 # Import error handlers
@@ -66,6 +68,9 @@ from servlets.ErrorHandler import register_error_handlers
 # Import cleanup utilities
 from servlets.WorkflowTracker import workflow_tracker
 from servlets.FileUploadHandler import upload_tracker
+
+# Import security and rate limiting
+from servlets.RateLimiter import rate_limit
 
 # Configure logging
 logging.basicConfig(
@@ -112,7 +117,7 @@ class GalaksioServer:
                      'default-src': "'self'",
                      'script-src': "'self' 'unsafe-inline' 'unsafe-eval'",
                      'style-src': "'self' 'unsafe-inline'",
-                     'img-src': "'self' data: https:",
+                     'img-src': "'self' data: https:',
                      'font-src': "'self' data:",
                      'connect-src': "'self' *",  # Allow connections to Galaxy instances
                  })
@@ -158,22 +163,21 @@ class GalaksioServer:
         # Static file serving and main routes
         @self.app.route('/')
         def index():
-            """Serve the main application."""
             return send_from_directory(self.app.static_folder, 'index.html')
         
         @self.app.route('/<path:path>')
         def static_files(path):
-            """Serve static files."""
+            """Serve static files with SPA fallback."""
             try:
                 return send_from_directory(self.app.static_folder, path)
             except:
                 # Fallback to index.html for SPA routing
                 return send_from_directory(self.app.static_folder, 'index.html')
         
-        # Health check endpoint
+        # Health check endpoint with Galaxy compatibility
         @self.app.route('/health')
         def health_check():
-            """Health check endpoint with system information."""
+            """Health check endpoint with Galaxy compatibility verification."""
             health_data = {
                 'status': 'healthy',
                 'version': '0.4.0',
@@ -186,12 +190,31 @@ class GalaksioServer:
                 'system': {
                     'python_version': sys.version,
                     'flask_version': self.app.__version__
-                }
+                },
+                'galaxy_connection': 'unknown'
             }
+            
+            # Test Galaxy connection and compatibility
+            try:
+                from servlets.GalaxyAPI import get_galaxy_instance
+                gi = get_galaxy_instance(settings)
+                from servlets.GalaxyAPIVerifier import get_api_verifier
+                verifier = get_api_verifier(gi)
+                
+                version = gi.config.get_version()
+                health_data['galaxy_connection'] = 'connected'
+                health_data['galaxy_version'] = version.get('version_major', 'unknown')
+                health_data['compatibility_report'] = verifier.get_compatibility_report()
+                
+            except Exception as e:
+                health_data['galaxy_connection'] = 'disconnected'
+                health_data['galaxy_error'] = str(e)
+            
             return jsonify(health_data)
         
         # API Routes - Galaxy Connection
         @self.app.route('/api/test_connection', methods=['POST'])
+        @rate_limit('auth')
         def test_connection():
             """Test connection to Galaxy instance."""
             try:
@@ -199,14 +222,11 @@ class GalaksioServer:
                 return jsonify(result)
             except Exception as e:
                 logger.error(f"Error in test_connection: {e}")
-                return jsonify({
-                    'success': False, 
-                    'error': str(e),
-                    'timestamp': datetime.now().isoformat()
-                }), 500
+                return jsonify({'success': False, 'error': str(e)}), 500
         
         # API Routes - Workflows
         @self.app.route('/api/execute_workflow', methods=['POST'])
+        @rate_limit('workflow')
         def execute_workflow():
             """Execute a Galaxy workflow."""
             try:
@@ -214,13 +234,10 @@ class GalaksioServer:
                 return jsonify(result)
             except Exception as e:
                 logger.error(f"Error in execute_workflow: {e}")
-                return jsonify({
-                    'success': False, 
-                    'error': str(e),
-                    'timestamp': datetime.now().isoformat()
-                }), 500
+                return jsonify({'success': False, 'error': str(e)}), 500
         
         @self.app.route('/api/generate_workflow_report', methods=['POST'])
+        @rate_limit('workflow')
         def generate_workflow_report():
             """Generate workflow execution report."""
             try:
@@ -228,13 +245,10 @@ class GalaksioServer:
                 return jsonify(result)
             except Exception as e:
                 logger.error(f"Error in generate_workflow_report: {e}")
-                return jsonify({
-                    'success': False, 
-                    'error': str(e),
-                    'timestamp': datetime.now().isoformat()
-                }), 500
+                return jsonify({'success': False, 'error': str(e)}), 500
         
         @self.app.route('/api/get_workflow_status', methods=['POST'])
+        @rate_limit('workflow')
         def get_workflow_status():
             """Get workflow execution status."""
             try:
@@ -242,13 +256,10 @@ class GalaksioServer:
                 return jsonify(result)
             except Exception as e:
                 logger.error(f"Error in get_workflow_status: {e}")
-                return jsonify({
-                    'success': False, 
-                    'error': str(e),
-                    'timestamp': datetime.now().isoformat()
-                }), 500
+                return jsonify({'success': False, 'error': str(e)}), 500
         
         @self.app.route('/api/get_all_workflow_status', methods=['GET'])
+        @rate_limit('api')
         def get_all_workflow_status():
             """Get status of all active workflows."""
             try:
@@ -257,7 +268,8 @@ class GalaksioServer:
                     return jsonify({
                         'success': True,
                         'workflows': active_workflows,
-                        'count': len(active_workflows)
+                        'count': len(active_workflows),
+                        'statistics': workflow_tracker.get_workflow_statistics()
                     })
                 else:
                     return jsonify({
@@ -266,14 +278,11 @@ class GalaksioServer:
                     }), 500
             except Exception as e:
                 logger.error(f"Error in get_all_workflow_status: {e}")
-                return jsonify({
-                    'success': False, 
-                    'error': str(e),
-                    'timestamp': datetime.now().isoformat()
-                }), 500
+                return jsonify({'success': False, 'error': str(e)}), 500
         
         # API Routes - File Upload
         @self.app.route('/api/upload_file', methods=['POST'])
+        @rate_limit('upload')
         def upload_file():
             """Upload file to Galaxy."""
             try:
@@ -281,13 +290,10 @@ class GalaksioServer:
                 return jsonify(result)
             except Exception as e:
                 logger.error(f"Error in upload_file: {e}")
-                return jsonify({
-                    'success': False, 
-                    'error': str(e),
-                    'timestamp': datetime.now().isoformat()
-                }), 500
+                return jsonify({'success': False, 'error': str(e)}), 500
         
         @self.app.route('/api/get_upload_status', methods=['POST'])
+        @rate_limit('api')
         def get_upload_status():
             """Get file upload status."""
             try:
@@ -295,13 +301,10 @@ class GalaksioServer:
                 return jsonify(result)
             except Exception as e:
                 logger.error(f"Error in get_upload_status: {e}")
-                return jsonify({
-                    'success': False, 
-                    'error': str(e),
-                    'timestamp': datetime.now().isoformat()
-                }), 500
+                return jsonify({'success': False, 'error': str(e)}), 500
         
         @self.app.route('/api/get_all_upload_status', methods=['GET'])
+        @rate_limit('api')
         def get_all_upload_status():
             """Get status of all active uploads."""
             try:
@@ -319,14 +322,81 @@ class GalaksioServer:
                     }), 500
             except Exception as e:
                 logger.error(f"Error in get_all_upload_status: {e}")
-                return jsonify({
-                    'success': False, 
-                    'error': str(e),
-                    'timestamp': datetime.now().isoformat()
-                }), 500
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        # API Routes - Paired Reads Handling
+        @self.app.route('/api/detect_paired_reads', methods=['POST'])
+        @rate_limit('api')
+        def detect_paired_reads():
+            """Detect paired-end reads in a Galaxy history."""
+            try:
+                result = detectPairedReads(request, settings)
+                return jsonify(result)
+            except Exception as e:
+                logger.error(f"Error in detect_paired_reads: {e}")
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        @self.app.route('/api/create_paired_collection', methods=['POST'])
+        @rate_limit('api')
+        def create_paired_collection():
+            """Create a paired collection from detected paired reads."""
+            try:
+                result = createPairedCollection(request, settings)
+                return jsonify(result)
+            except Exception as e:
+                logger.error(f"Error in create_paired_collection: {e}")
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        @self.app.route('/api/auto_pair_all_reads', methods=['POST'])
+        @rate_limit('api')
+        def auto_pair_all_reads():
+            """Automatically detect and pair all reads in a history."""
+            try:
+                result = autoPairAllReads(request, settings)
+                return jsonify(result)
+            except Exception as e:
+                logger.error(f"Error in auto_pair_all_reads: {e}")
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        @self.app.route('/api/get_paired_read_patterns', methods=['GET'])
+        @rate_limit('api')
+        def get_paired_read_patterns():
+            """Get supported paired read patterns."""
+            try:
+                from servlets.PairedReadsHandler import get_paired_reads_handler
+                handler = get_paired_reads_handler(None)  # Pass None for pattern access
+                result = handler.get_supported_patterns()
+                return jsonify(result)
+            except Exception as e:
+                logger.error(f"Error in get_paired_read_patterns: {e}")
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        # API Routes - Galaxy Compatibility
+        @self.app.route('/api/get_compatibility_report', methods=['POST'])
+        @rate_limit('api')
+        def get_compatibility_report():
+            """Get Galaxy API compatibility report."""
+            try:
+                result = getCompatibilityReport(request, settings)
+                return jsonify(result)
+            except Exception as e:
+                logger.error(f"Error in get_compatibility_report: {e}")
+                return jsonify({'success': False, 'error': str(e)}), 500
+        
+        @self.app.route('/api/get_history_contents', methods=['POST'])
+        @rate_limit('api')
+        def get_history_contents():
+            """Get history contents with Galaxy 25.0 compatibility."""
+            try:
+                result = getHistoryContents(request, settings)
+                return jsonify(result)
+            except Exception as e:
+                logger.error(f"Error in get_history_contents: {e}")
+                return jsonify({'success': False, 'error': str(e)}), 500
         
         # API Routes - Configuration
         @self.app.route('/api/get_config', methods=['GET'])
+        @rate_limit('api')
         def get_config():
             """Get server configuration."""
             try:
@@ -340,20 +410,18 @@ class GalaksioServer:
                             'workflow_tracking': True,
                             'chunked_upload': True,
                             'enhanced_auth': True,
-                            'error_handling': True
+                            'paired_reads_detection': True,
+                            'galaxy_25_compatibility': True
                         }
                     }
                 }
                 return jsonify(config_data)
             except Exception as e:
                 logger.error(f"Error in get_config: {e}")
-                return jsonify({
-                    'success': False, 
-                    'error': str(e),
-                    'timestamp': datetime.now().isoformat()
-                }), 500
+                return jsonify({'success': False, 'error': str(e)}), 500
         
         @self.app.route('/api/update_config', methods=['POST'])
+        @rate_limit('api')
         def update_config():
             """Update server configuration."""
             try:
@@ -366,14 +434,11 @@ class GalaksioServer:
                 })
             except Exception as e:
                 logger.error(f"Error in update_config: {e}")
-                return jsonify({
-                    'success': False, 
-                    'error': str(e),
-                    'timestamp': datetime.now().isoformat()
-                }), 500
+                return jsonify({'success': False, 'error': str(e)}), 500
         
         # API Routes - System Management
         @self.app.route('/api/cleanup_old_workflows', methods=['POST'])
+        @rate_limit('api')
         def cleanup_old_workflows():
             """Clean up old completed workflows."""
             try:
@@ -391,13 +456,10 @@ class GalaksioServer:
                     }), 500
             except Exception as e:
                 logger.error(f"Error in cleanup_old_workflows: {e}")
-                return jsonify({
-                    'success': False, 
-                    'error': str(e),
-                    'timestamp': datetime.now().isoformat()
-                }), 500
+                return jsonify({'success': False, 'error': str(e)}), 500
         
         @self.app.route('/api/cleanup_old_uploads', methods=['POST'])
+        @rate_limit('api')
         def cleanup_old_uploads():
             """Clean up old completed uploads."""
             try:
@@ -415,11 +477,7 @@ class GalaksioServer:
                     }), 500
             except Exception as e:
                 logger.error(f"Error in cleanup_old_uploads: {e}")
-                return jsonify({
-                    'success': False, 
-                    'error': str(e),
-                    'timestamp': datetime.now().isoformat()
-                }), 500
+                return jsonify({'success': False, 'error': str(e)}), 500
         
         # Error handlers
         @self.app.errorhandler(404)
@@ -442,6 +500,17 @@ class GalaksioServer:
                 'max_size': self.app.config['MAX_CONTENT_LENGTH'],
                 'timestamp': datetime.now().isoformat()
             }), 413
+        
+        @self.app.errorhandler(429)
+        def handle_rate_limit_exceeded(error):
+            """Handle rate limit exceeded errors."""
+            return jsonify({
+                'success': False,
+                'error': 'Rate limit exceeded',
+                'code': 'RATE_LIMIT_EXCEEDED',
+                'message': 'Too many requests. Please try again later.',
+                'timestamp': datetime.now().isoformat()
+            }), 429
         
         @self.app.errorhandler(500)
         def handle_internal_error(error):
@@ -530,61 +599,3 @@ if __name__ == '__main__':
         print("Galaksio Server")
         print("Use --start to start the server")
         print("Use --help for more options")
-
-# Add these new API routes in the setup_routes method
-        # API Routes - Paired Reads Handling
-        @self.app.route('/api/detect_paired_reads', methods=['POST'])
-        def detect_paired_reads():
-            """Detect paired-end reads in a Galaxy history."""
-            try:
-                result = detectPairedReads(request, settings)
-                return jsonify(result)
-            except Exception as e:
-                logger.error(f"Error in detect_paired_reads: {e}")
-                return jsonify({
-                    'success': False, 
-                    'error': str(e),
-                    'timestamp': datetime.now().isoformat()
-                }), 500
-        
-        @self.app.route('/api/create_paired_collection', methods=['POST'])
-        def create_paired_collection():
-            """Create a paired collection from detected paired reads."""
-            try:
-                result = createPairedCollection(request, settings)
-                return jsonify(result)
-            except Exception as e:
-                logger.error(f"Error in create_paired_collection: {e}")
-                return jsonify({
-                    'success': False, 
-                    'error': str(e),
-                    'timestamp': datetime.now().isoformat()
-                }), 500
-        
-        @self.app.route('/api/auto_pair_all_reads', methods=['POST'])
-        def auto_pair_all_reads():
-            """Automatically detect and pair all reads in a history."""
-            try:
-                result = autoPairAllReads(request, settings)
-                return jsonify(result)
-            except Exception as e:
-                logger.error(f"Error in auto_pair_all_reads: {e}")
-                return jsonify({
-                    'success': False, 
-                    'error': str(e),
-                    'timestamp': datetime.now().isoformat()
-                }), 500
-        
-        @self.app.route('/api/get_paired_read_patterns', methods=['GET'])
-        def get_paired_read_patterns():
-            """Get supported paired read patterns."""
-            try:
-                result = getPairedReadPatterns(request, settings)
-                return jsonify(result)
-            except Exception as e:
-                logger.error(f"Error in get_paired_read_patterns: {e}")
-                return jsonify({
-                    'success': False, 
-                    'error': str(e),
-                    'timestamp': datetime.now().isoformat()
-                }), 500
