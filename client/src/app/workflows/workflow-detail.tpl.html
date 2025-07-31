@@ -1,41 +1,256 @@
-<div ng-controller="WorkflowDetailController as controller" >
-	<nav class="navbar navbar-default navbar-top title-bar">
-		<h1>Workflow <small>details</small></h1>
-	</nav>
-	<div class="workflow-run-container">
-		<h2 class="workflow-title" style="text-align:center;margin-bottom: 17px;margin-top: 0;"><b>Workflow name: </b>{{workflow.name}}</h2>
-		<!-- ************************************************************* -->
-		<!-- WORKFLOW DESCRIPTION -->
-		<!-- ************************************************************* -->
-		<div class="panel panel-container" >
-			<h4>Details</h4>
-			<p><b>Author: </b>{{workflow.owner}}</p>
-			<p><b>Description: </b>{{((workflow.annotation !== "" && workflow.annotation !== null)?workflow.annotation:"No description provided")}}</p>
-		</div>
-		<!-- ************************************************************* -->
-		<!-- WORKFLOW DIAGRAM -->
-		<!-- ************************************************************* -->
-		<div class="panel panel-container" >
-			<a style="cursor:pointer; float: right; color:#333;" ng-click="controller.layoutDiagramHandler()"> <i class="fa fa-refresh"></i> Update diagram layout</a>
-			<h4>Workflow overview</h4>
-			<i ng-show="loadingComplete === false" style="line-height: 30px;font-size: 15px;color: #777;margin-left: 15px;">
-				<i class="fa fa-spinner fa-pulse fa-fw"></i> Loading workflow details...
-			</i>
-			<div id="sigmaContainer" style="height:450px;"></div>
-		</div>
-		<div style="margin-top: 100px; display:block; clear:both;"></div>
-		<!-- ************************************************************* -->
-		<!-- NAVIGATION BAR -->
-		<!-- ************************************************************* -->
-		<nav class="navbar navbar-default navbar-fixed-bottom " >
-			<div class="container">
-				<a class="btn btn-danger btn-md navbar-left" ng-click="controller.cancelButtonHandler();">
-					<i class="fa fa-chevron-left"></i> Close and go back
-				</a>
-				<a class="btn btn-default btn-md navbar-left" ng-click="controller.backButtonHandler();" >
-					<i class="fa fa-plus-circle"></i> Import to my collection
-				</a>
-			</div>
-		</nav>
-	</div>
+<div class="workflow-detail-container">
+    <!-- Header Section -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="page-title">
+                    <i class="fas fa-project-diagram me-2"></i>
+                    Workflow Details
+                </h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="#" ng-click="main.setPage('workflows')">Workflows</a></li>
+                        <li class="breadcrumb-item active">{{workflow.name}}</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="col-md-4">
+                <div class="header-actions">
+                    <button class="btn btn-outline-secondary me-2" ng-click="goBack()">
+                        <i class="fas fa-arrow-left me-1"></i> Back
+                    </button>
+                    <button class="btn btn-primary" ng-click="runWorkflow()">
+                        <i class="fas fa-play me-1"></i> Run Workflow
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" ng-if="isLoading">
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading workflow details...</p>
+        </div>
+    </div>
+
+    <!-- Workflow Details Content -->
+    <div class="workflow-content" ng-if="!isLoading && workflow">
+        <!-- Workflow Overview Card -->
+        <div class="card mb-4 animate-fade-in-up">
+            <div class="card-header">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Overview
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="workflow-info">
+                            <div class="info-item">
+                                <label class="info-label">Name:</label>
+                                <span class="info-value">{{workflow.name}}</span>
+                            </div>
+                            <div class="info-item">
+                                <label class="info-label">Owner:</label>
+                                <span class="info-value">{{workflow.owner}}</span>
+                            </div>
+                            <div class="info-item">
+                                <label class="info-label">Created:</label>
+                                <span class="info-value">{{workflow.create_time | date:'full'}}</span>
+                            </div>
+                            <div class="info-item">
+                                <label class="info-label">Last Updated:</label>
+                                <span class="info-value">{{workflow.update_time | date:'full'}}</span>
+                            </div>
+                            <div class="info-item">
+                                <label class="info-label">Tags:</label>
+                                <div class="workflow-tags">
+                                    <span class="tag" ng-repeat="tag in workflow.tags">{{tag}}</span>
+                                    <span class="tag" ng-if="!workflow.tags || workflow.tags.length === 0">No tags</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="workflow-stats">
+                            <div class="stat-item">
+                                <div class="stat-number">{{workflow.run_count || 0}}</div>
+                                <div class="stat-label">Total Runs</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">{{workflow.success_rate || 0}}%</div>
+                                <div class="stat-label">Success Rate</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">{{workflow.popularity || 0}}</div>
+                                <div class="stat-label">Popularity</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Workflow Description Card -->
+        <div class="card mb-4 animate-fade-in-up animate-delay-1">
+            <div class="card-header">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-file-alt me-2"></i>
+                    Description
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="workflow-description">
+                    <p ng-if="workflow.description">{{workflow.description}}</p>
+                    <p ng-if="!workflow.description" class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        No description available for this workflow.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Workflow Steps Card -->
+        <div class="card mb-4 animate-fade-in-up animate-delay-2">
+            <div class="card-header">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-tasks me-2"></i>
+                    Workflow Steps
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="workflow-steps">
+                    <div class="step-item" ng-repeat="step in workflow.steps" ng-class="{'step-active': $index === currentStep}">
+                        <div class="step-number">{{$index + 1}}</div>
+                        <div class="step-content">
+                            <h5 class="step-name">{{step.name || 'Step ' + ($index + 1)}}</h5>
+                            <p class="step-description">{{step.description || 'No description available'}}</p>
+                            <div class="step-meta">
+                                <span class="step-type">
+                                    <i class="fas fa-cog me-1"></i>
+                                    {{step.type || 'Tool'}}
+                                </span>
+                                <span class="step-status" ng-class="getStepStatusClass(step)">
+                                    <i class="fas me-1" ng-class="getStepStatusIcon(step)"></i>
+                                    {{step.status || 'Ready'}}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center text-muted" ng-if="!workflow.steps || workflow.steps.length === 0">
+                        <i class="fas fa-info-circle me-1"></i>
+                        No steps defined for this workflow.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Runs Card -->
+        <div class="card mb-4 animate-fade-in-up animate-delay-3">
+            <div class="card-header">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Recent Runs
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Run ID</th>
+                                <th>Start Time</th>
+                                <th>Status</th>
+                                <th>Duration</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="run in recentRuns">
+                                <td>
+                                    <code>{{run.id | limitTo: 8}}</code>
+                                </td>
+                                <td>{{run.create_time | date:'short'}}</td>
+                                <td>
+                                    <span class="badge" ng-class="getRunStatusClass(run.state)">
+                                        {{run.state}}
+                                    </span>
+                                </td>
+                                <td>{{run.duration || 'N/A'}}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary" 
+                                                ng-click="viewRunDetails(run)"
+                                                title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-secondary" 
+                                                ng-click="downloadResults(run)"
+                                                title="Download Results"
+                                                ng-if="run.state === 'completed'">
+                                            <i class="fas fa-download"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr ng-if="!recentRuns || recentRuns.length === 0">
+                                <td colspan="5" class="text-center text-muted">
+                                    <i class="fas fa-history me-1"></i>
+                                    No recent runs found.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons animate-fade-in-up animate-delay-4">
+            <div class="row">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="action-group">
+                            <button class="btn btn-primary btn-lg" ng-click="runWorkflow()">
+                                <i class="fas fa-play me-1"></i>
+                                Run Workflow
+                            </button>
+                            <button class="btn btn-outline-secondary btn-lg" ng-click="exportWorkflow()">
+                                <i class="fas fa-download me-1"></i>
+                                Export
+                            </button>
+                            <button class="btn btn-outline-secondary btn-lg" ng-click="shareWorkflow()">
+                                <i class="fas fa-share me-1"></i>
+                                Share
+                            </button>
+                        </div>
+                        <div class="action-group">
+                            <button class="btn btn-outline-danger" ng-click="deleteWorkflow()">
+                                <i class="fas fa-trash me-1"></i>
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" ng-if="!isLoading && !workflow">
+        <div class="text-center py-5">
+            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+            <h3>Workflow Not Found</h3>
+            <p class="text-muted">The requested workflow could not be found or may have been deleted.</p>
+            <button class="btn btn-primary" ng-click="goBack()">
+                <i class="fas fa-arrow-left me-1"></i>
+                Back to Workflows
+            </button>
+        </div>
+    </div>
 </div>
