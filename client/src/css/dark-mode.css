@@ -1,0 +1,519 @@
+/**
+ * Dark Mode Styles for Galaksio
+ * Enhanced dark theme for better user experience in low-light environments
+ */
+
+/* Dark mode variables and base styles */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-primary: #1a202c;
+        --bg-secondary: #2d3748;
+        --bg-tertiary: #4a5568;
+        --text-primary: #e2e8f0;
+        --text-secondary: #a0aec0;
+        --text-muted: #718096;
+        --border-color: #4a5568;
+        --accent-color: #667eea;
+        --success-color: #48bb78;
+        --warning-color: #ed8936;
+        --danger-color: #f56565;
+        --info-color: #4299e1;
+    }
+
+    body {
+        background-color: var(--bg-primary) !important;
+        color: var(--text-primary) !important;
+    }
+
+    /* Card styles */
+    .card {
+        background-color: var(--bg-secondary) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .card-header {
+        background-color: var(--bg-tertiary) !important;
+        border-bottom-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .card-body {
+        background-color: var(--bg-secondary) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .card-footer {
+        background-color: var(--bg-tertiary) !important;
+        border-top-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
+    }
+
+    /* Form controls */
+    .form-control {
+        background-color: var(--bg-tertiary) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .form-control:focus {
+        background-color: var(--bg-tertiary) !important;
+        border-color: var(--accent-color) !important;
+        color: var(--text-primary) !important;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25) !important;
+    }
+
+    .form-select {
+        background-color: var(--bg-tertiary) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23e2e8f0' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M4.5 1.5a.5.5 0 0 1 0 1h1a.5.5 0 0 1 0 1l.5 1.5 1.5 1.5a.5.5 0 0 1-1 0h-1a.5.5 0 0 1-1 0l-1.5-1.5-1.5-1.5a.5.5 0 0 1 0-1h1a.5.5 0 0 1 0 1l1.5 1.5zm3.5 3a.5.5 0 0 1-1 0h-1a.5.5 0 0 1-1 0l-1.5-1.5-1.5-1.5a.5.5 0 0 1 0-1h1a.5.5 0 0 1 0 1l1.5 1.5z'/%3e%3c/svg%3e");
+    }
+
+    .form-select:focus {
+        border-color: var(--accent-color) !important;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25) !important;
+    }
+
+    /* Buttons */
+    .btn {
+        color: var(--text-primary) !important;
+    }
+
+    .btn-primary {
+        background-color: var(--accent-color) !important;
+        border-color: var(--accent-color) !important;
+        color: white !important;
+    }
+
+    .btn-primary:hover {
+        background-color: #5a67d8 !important;
+        border-color: #5a67d8 !important;
+        color: white !important;
+    }
+
+    .btn-secondary {
+        background-color: var(--bg-tertiary) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .btn-secondary:hover {
+        background-color: #2d3748 !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .btn-success {
+        background-color: var(--success-color) !important;
+        border-color: var(--success-color) !important;
+        color: white !important;
+    }
+
+    .btn-warning {
+        background-color: var(--warning-color) !important;
+        border-color: var(--warning-color) !important;
+        color: white !important;
+    }
+
+    .btn-danger {
+        background-color: var(--danger-color) !important;
+        border-color: var(--danger-color) !important;
+        color: white !important;
+    }
+
+    .btn-outline-primary {
+        background-color: transparent !important;
+        border-color: var(--accent-color) !important;
+        color: var(--accent-color) !important;
+    }
+
+    .btn-outline-primary:hover {
+        background-color: var(--accent-color) !important;
+        border-color: var(--accent-color) !important;
+        color: white !important;
+    }
+
+    .btn-outline-secondary {
+        background-color: transparent !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-secondary) !important;
+    }
+
+    .btn-outline-secondary:hover {
+        background-color: var(--bg-tertiary) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
+    }
+
+    /* Badges */
+    .badge {
+        background-color: var(--bg-tertiary) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .badge-success {
+        background-color: var(--success-color) !important;
+        color: white !important;
+    }
+
+    .badge-warning {
+        background-color: var(--warning-color) !important;
+        color: white !important;
+    }
+
+    .badge-danger {
+        background-color: var(--danger-color) !important;
+        color: white !important;
+    }
+
+    .badge-info {
+        background-color: var(--info-color) !important;
+        color: white !important;
+    }
+
+    .badge-primary {
+        background-color: var(--accent-color) !important;
+        color: white !important;
+    }
+
+    /* Alerts */
+    .alert {
+        background-color: var(--bg-tertiary) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .alert-success {
+        background-color: rgba(72, 187, 120, 0.2) !important;
+        border-color: var(--success-color) !important;
+        color: var(--success-color) !important;
+    }
+
+    .alert-warning {
+        background-color: rgba(237, 137, 54, 0.2) !important;
+        border-color: var(--warning-color) !important;
+        color: var(--warning-color) !important;
+    }
+
+    .alert-danger {
+        background-color: rgba(245, 101, 101, 0.2) !important;
+        border-color: var(--danger-color) !important;
+        color: var(--danger-color) !important;
+    }
+
+    .alert-info {
+        background-color: rgba(66, 153, 225, 0.2) !important;
+        border-color: var(--info-color) !important;
+        color: var(--info-color) !important;
+    }
+
+    /* Tables */
+    .table {
+        color: var(--text-primary) !important;
+    }
+
+    .table thead th {
+        background-color: var(--bg-tertiary) !important;
+        border-bottom-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .table tbody tr {
+        background-color: var(--bg-secondary) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .table tbody tr:hover {
+        background-color: var(--bg-tertiary) !important;
+    }
+
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: var(--bg-secondary) !important;
+    }
+
+    .table-bordered {
+        border-color: var(--border-color) !important;
+    }
+
+    .table-bordered th,
+    .table-bordered td {
+        border-color: var(--border-color) !important;
+    }
+
+    /* Navigation */
+    .navbar {
+        background-color: var(--bg-secondary) !important;
+        border-color: var(--border-color) !important;
+    }
+
+    .navbar-brand {
+        color: var(--text-primary) !important;
+    }
+
+    .navbar-nav .nav-link {
+        color: var(--text-secondary) !important;
+    }
+
+    .navbar-nav .nav-link:hover,
+    .navbar-nav .nav-link.active {
+        color: var(--text-primary) !important;
+    }
+
+    .navbar-toggler {
+        border-color: var(--border-color) !important;
+    }
+
+    .navbar-toggler-icon {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%23226, 232, 240, 0.75)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+    }
+
+    /* Modal */
+    .modal-content {
+        background-color: var(--bg-secondary) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .modal-header {
+        background-color: var(--bg-tertiary) !important;
+        border-bottom-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .modal-footer {
+        background-color: var(--bg-tertiary) !important;
+        border-top-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
+    }
+
+    /* Dropdown */
+    .dropdown-menu {
+        background-color: var(--bg-secondary) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .dropdown-item {
+        color: var(--text-primary) !important;
+    }
+
+    .dropdown-item:hover,
+    .dropdown-item:focus {
+        background-color: var(--bg-tertiary) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .dropdown-divider {
+        border-color: var(--border-color) !important;
+    }
+
+    /* Progress bars */
+    .progress {
+        background-color: var(--bg-tertiary) !important;
+    }
+
+    .progress-bar {
+        background-color: var(--accent-color) !important;
+    }
+
+    /* List group */
+    .list-group {
+        background-color: var(--bg-secondary) !important;
+    }
+
+    .list-group-item {
+        background-color: var(--bg-secondary) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .list-group-item:hover {
+        background-color: var(--bg-tertiary) !important;
+    }
+
+    .list-group-item.active {
+        background-color: var(--accent-color) !important;
+        border-color: var(--accent-color) !important;
+        color: white !important;
+    }
+
+    /* Breadcrumb */
+    .breadcrumb {
+        background-color: var(--bg-tertiary) !important;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        color: var(--text-secondary) !important;
+    }
+
+    .breadcrumb-item.active {
+        color: var(--text-primary) !important;
+    }
+
+    /* Pagination */
+    .page-link {
+        background-color: var(--bg-secondary) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .page-link:hover {
+        background-color: var(--bg-tertiary) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .page-item.active .page-link {
+        background-color: var(--accent-color) !important;
+        border-color: var(--accent-color) !important;
+        color: white !important;
+    }
+
+    /* Code */
+    code {
+        background-color: var(--bg-tertiary) !important;
+        color: var(--text-primary) !important;
+    }
+
+    pre {
+        background-color: var(--bg-tertiary) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-primary) !important;
+    }
+
+    pre code {
+        color: var(--text-primary) !important;
+    }
+
+    /* Blockquote */
+    blockquote {
+        border-left-color: var(--border-color) !important;
+        color: var(--text-secondary) !important;
+    }
+
+    /* Horizontal rules */
+    hr {
+        border-color: var(--border-color) !important;
+    }
+
+    /* Text utilities */
+    .text-muted {
+        color: var(--text-muted) !important;
+    }
+
+    .text-primary {
+        color: var(--accent-color) !important;
+    }
+
+    .text-secondary {
+        color: var(--text-secondary) !important;
+    }
+
+    .text-success {
+        color: var(--success-color) !important;
+    }
+
+    .text-warning {
+        color: var(--warning-color) !important;
+    }
+
+    .text-danger {
+        color: var(--danger-color) !important;
+    }
+
+    .text-info {
+        color: var(--info-color) !important;
+    }
+
+    /* Background utilities */
+    .bg-primary {
+        background-color: var(--accent-color) !important;
+    }
+
+    .bg-secondary {
+        background-color: var(--bg-secondary) !important;
+    }
+
+    .bg-success {
+        background-color: var(--success-color) !important;
+    }
+
+    .bg-warning {
+        background-color: var(--warning-color) !important;
+    }
+
+    .bg-danger {
+        background-color: var(--danger-color) !important;
+    }
+
+    .bg-info {
+        background-color: var(--info-color) !important;
+    }
+
+    .bg-light {
+        background-color: var(--bg-tertiary) !important;
+    }
+
+    .bg-dark {
+        background-color: var(--bg-primary) !important;
+    }
+
+    /* Border utilities */
+    .border {
+        border-color: var(--border-color) !important;
+    }
+
+    .border-top {
+        border-top-color: var(--border-color) !important;
+    }
+
+    .border-bottom {
+        border-bottom-color: var(--border-color) !important;
+    }
+
+    .border-left {
+        border-left-color: var(--border-color) !important;
+    }
+
+    .border-right {
+        border-right-color: var(--border-color) !important;
+    }
+
+    /* Custom styles for paired reads interface */
+    .stat-card {
+        background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%) !important;
+        color: #e2e8f0 !important;
+    }
+
+    .file-info {
+        background-color: #374151 !important;
+        border-left-color: #60a5fa !important;
+        color: #e2e8f0 !important;
+    }
+
+    .skeleton-card {
+        background: #4a5568 !important;
+    }
+
+    .skeleton-line {
+        background: linear-gradient(
+            90deg,
+            #4a5568 0px,
+            #2d3748 40px,
+            #4a5568 80px
+        ) !important;
+    }
+
+    /* Enhanced focus states */
+    .btn:focus,
+    .form-control:focus,
+    .form-select:focus,
+    .form-check-input:focus {
+        outline: 2px solid var(--accent-color) !important;
+        outline-offset: 2px !important;
+    }
+
+    /* Enhanced hover states */
+    .card:hover {
+        box-shadow:
