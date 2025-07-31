@@ -22,6 +22,8 @@ class WorkflowTracker:
         self.lock = threading.Lock()
         self.tracking_thread = None
         self.running = False
+        self.max_retries = 3
+        self.retry_delay = 1
     
     def start_tracking(self, workflow_id: str, invocation_id: str):
         """Start tracking a workflow execution."""
@@ -34,7 +36,8 @@ class WorkflowTracker:
                 'state': 'running',
                 'steps': {},
                 'progress': 0.0,
-                'errors': []
+                'errors': [],
+                'retry_count': 0
             }
         
         if not self.running:
@@ -85,28 +88,21 @@ class WorkflowTracker:
                 logger.error(f"Error updating workflow {invocation_id}: {e}")
     
     def _update_single_workflow(self, invocation_id: str):
-    """Update state of a single workflow execution."""
-    try:
-        # Add rate limiting handling
-        max_retries = 3
-        retry_delay = 1
-        
-        for attempt in range(max_retries):
-            try:
-                invocation = self.gi.invocations.show_invocation(invocation_id)
-                break
-            except Exception as e:
-                if "429" in str(e) and attempt < max_retries - 1:  # Rate limit
-                    time.sleep(retry_delay)
-                    retry_delay *= 2
-                    continue
-                raise
-          
+        """Update state of a single workflow execution."""
+        try:
+            # Get invocation details from Galaxy with retry logic
+            invocation = self._get_invocation_with_retry(invocation_id)
+            if not invocation:
+                return
+            
+            workflow_state = invocation.get('state', 'unknown')
+            
             with self.lock:
                 if invocation_id in self.active_workflows:
                     workflow_info = self.active_workflows[invocation_id]
                     workflow_info['state'] = workflow_state
                     workflow_info['last_update'] = datetime.now()
+                    workflow_info['retry_count'] = 0  # Reset retry count on success
                     
                     # Update step information
                     steps = invocation.get('steps', [])
@@ -126,6 +122,34 @@ class WorkflowTracker:
         
         except Exception as e:
             logger.error(f"Error updating workflow {invocation_id}: {e}")
+            self._handle_update_error(invocation_id, e)
+    
+    def _get_invocation_with_retry(self, invocation_id: str) -> Optional[Dict]:
+        """Get invocation details with retry logic."""
+        for attempt in range(self.max_retries):
+            try:
+                return self.gi.invocations.show_invocation(invocation_id)
+            except Exception as e:
+                if attempt < self.max_retries - 1:
+                    wait_time = self.retry_delay * (2 ** attempt)  # Exponential backoff
+                    logger.warning(f"Retry {attempt + 1}/{self.max_retries} for invocation {invocation_id} after {wait_time}s")
+                    time.sleep(wait_time)
+                else:
+                    logger.error(f"Failed to get invocation {invocation_id} after {self.max_retries} attempts")
+                    raise
+        return None
+    
+    def _handle_update_error(self, invocation_id: str, error: Exception):
+        """Handle errors in workflow update."""
+        with self.lock:
+            if invocation_id in self.active_workflows:
+                workflow_info = self.active_workflows[invocation_id]
+                workflow_info['retry_count'] += 1
+                
+                if workflow_info['retry_count'] >= self.max_retries:
+                    workflow_info['state'] = 'error'
+                    workflow_info['end_time'] = datetime.now()
+                    workflow_info['errors'].append(f"Failed to update workflow status: {str(error)}")
     
     def _process_steps(self, steps: List[Dict]) -> Dict:
         """Process workflow steps and return structured information."""
@@ -188,6 +212,22 @@ class WorkflowTracker:
             for invocation_id in to_remove:
                 del self.active_workflows[invocation_id]
                 logger.info(f"Cleaned up old workflow: {invocation_id}")
+
+    def get_workflow_statistics(self) -> Dict:
+        """Get workflow tracking statistics."""
+        with self.lock:
+            total_workflows = len(self.active_workflows)
+            running_workflows = len([w for w in self.active_workflows.values() if w['state'] == 'running'])
+            completed_workflows = len([w for w in self.active_workflows.values() if w['state'] in ['ok', 'error', 'deleted']])
+            failed_workflows = len([w for w in self.active_workflows.values() if w['state'] == 'error'])
+            
+            return {
+                'total_workflows': total_workflows,
+                'running_workflows': running_workflows,
+                'completed_workflows': completed_workflows,
+                'failed_workflows': failed_workflows,
+                'success_rate': (completed_workflows - failed_workflows) / max(completed_workflows, 1) * 100
+            }
 
 # Global workflow tracker instance
 workflow_tracker = None
