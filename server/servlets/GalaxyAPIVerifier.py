@@ -159,7 +159,8 @@ class GalaxyAPIVerifier:
             'compatibility_issues': self.compatibility_issues,
             'issues_count': len(self.compatibility_issues),
             'is_compatible': len(self.compatibility_issues) == 0,
-            'recommendations': self._get_recommendations()
+            'recommendations': self._get_recommendations(),
+            'supported_features': self._get_supported_features()
         }
     
     def _get_recommendations(self) -> List[str]:
@@ -177,12 +178,36 @@ class GalaxyAPIVerifier:
         
         return recommendations
     
+    def _get_supported_features(self) -> List[str]:
+        """Get list of supported features based on compatibility."""
+        features = []
+        
+        # Add features based on successful endpoint checks
+        endpoint_issues = [issue for issue in self.compatibility_issues if 'endpoint issue' in issue]
+        
+        if not any('workflows' in issue for issue in endpoint_issues):
+            features.append('workflows')
+        
+        if not any('invocations' in issue for issue in endpoint_issues):
+            features.append('invocations')
+        
+        if not any('histories' in issue for issue in endpoint_issues):
+            features.append('histories')
+        
+        if not any('datasets' in issue for issue in endpoint_issues):
+            features.append('datasets')
+        
+        if not any('collections' in issue for issue in endpoint_issues):
+            features.append('collections')
+        
+        return features
+    
     def is_compatible(self) -> bool:
         """Check if the current Galaxy instance is compatible."""
         return len(self.compatibility_issues) == 0
     
-    def get_safe_workflow_invocation(self, workflow_id: str, history_id: str, 
-                                     inputs: Dict, params: Dict = None) -> Dict:
+    def get_safe_workflow_invocation(self, workflow_id: str, history_id: str,
+                                   inputs: Dict, params: Dict = None) -> Dict:
         """Safely invoke workflow with compatibility checks."""
         try:
             # Try Galaxy 25.0+ method first
@@ -200,8 +225,8 @@ class GalaxyAPIVerifier:
                 logger.error(f"Fallback workflow invocation also failed: {fallback_error}")
                 raise
     
-    def _invoke_workflow_25(self, workflow_id: str, history_id: str, 
-                            inputs: Dict, params: Dict = None) -> Dict:
+    def _invoke_workflow_25(self, workflow_id: str, history_id: str,
+                           inputs: Dict, params: Dict = None) -> Dict:
         """Invoke workflow using Galaxy 25.0+ method."""
         invocation_params = {
             'workflow_id': workflow_id,
@@ -215,8 +240,8 @@ class GalaxyAPIVerifier:
         
         return self.gi.workflows.invoke_workflow(**invocation_params)
     
-    def _invoke_workflow_legacy(self, workflow_id: str, history_id: str, 
-                                inputs: Dict, params: Dict = None) -> Dict:
+    def _invoke_workflow_legacy(self, workflow_id: str, history_id: str,
+                               inputs: Dict, params: Dict = None) -> Dict:
         """Invoke workflow using legacy method."""
         invocation_params = {
             'workflow_id': workflow_id,
@@ -236,7 +261,6 @@ class GalaxyAPIVerifier:
             return self.gi.histories.show_history(history_id, contents=contents)
         except Exception as e:
             logger.error(f"History content retrieval failed: {e}")
-            
             # Try alternative method for older Galaxy versions
             try:
                 history = self.gi.histories.show_history(history_id)
@@ -277,34 +301,71 @@ class GalaxyAPIVerifier:
         if 'elements' not in collection_description:
             raise ValueError("Collection elements are required")
         
-        # Validate elements structure
+        # Validate elements structure for Galaxy 25.0
         for element in collection_description['elements']:
-            if 'src' not in element:
-                element['src'] = 'hda'  # Default to history dataset
-            if 'name' not in element:
-                element['name'] = f"element_{element.get('id', 'unknown')}"
+            if 'name' not in element or 'src' not in element or 'id' not in element:
+                raise ValueError("Each collection element must have name, src, and id")
         
-        return self.gi.histories.create_dataset_collection(history_id, collection_description)
+        return self.gi.histories.create_dataset_collection(
+            history_id=history_id,
+            collection_description=collection_description
+        )
     
     def _create_collection_legacy(self, history_id: str, collection_description: Dict) -> Dict:
         """Create collection using legacy method."""
-        # Legacy compatibility - adjust structure if needed
-        legacy_description = collection_description.copy()
+        # Legacy method might have different requirements
+        if 'collection_type' not in collection_description:
+            collection_description['collection_type'] = 'list'
         
-        # Some older Galaxy versions might need different structure
-        if 'element_identifiers' not in legacy_description and 'elements' in legacy_description:
-            legacy_description['element_identifiers'] = legacy_description.pop('elements')
+        if 'name' not in collection_description:
+            collection_description['name'] = 'Unnamed Collection'
         
-        return self.gi.histories.create_dataset_collection(history_id, legacy_description)
+        if 'elements' not in collection_description:
+            raise ValueError("Collection elements are required")
+        
+        # Try to create with legacy structure
+        try:
+            return self.gi.histories.create_dataset_collection(
+                history_id=history_id,
+                collection_description=collection_description
+            )
+        except Exception as e:
+            logger.warning(f"Legacy collection creation failed, trying alternative structure: {e}")
+            
+            # Try alternative structure for older versions
+            alt_description = {
+                'name': collection_description['name'],
+                'type': collection_description['collection_type'],
+                'element_identifiers': collection_description['elements']
+            }
+            
+            return self.gi.histories.create_dataset_collection(
+                history_id=history_id,
+                collection_description=alt_description
+            )
+    
+    def get_safe_invocation_status(self, invocation_id: str) -> Dict:
+        """Safely get invocation status with compatibility checks."""
+        try:
+            return self.gi.invocations.show_invocation(invocation_id)
+        except Exception as e:
+            logger.error(f"Invocation status retrieval failed: {e}")
+            raise
+    
+    def get_safe_workflow_details(self, workflow_id: str) -> Dict:
+        """Safely get workflow details with compatibility checks."""
+        try:
+            return self.gi.workflows.show_workflow(workflow_id)
+        except Exception as e:
+            logger.error(f"Workflow details retrieval failed: {e}")
+            raise
 
-# Global verifier instance
-api_verifier = None
+# Global API verifier instance
+_api_verifier = None
 
 def get_api_verifier(galaxy_instance: GalaxyInstance) -> GalaxyAPIVerifier:
-    """Get or create the global API verifier instance."""
-    global api_verifier
-    
-    if api_verifier is None or api_verifier.gi.url != galaxy_instance.url:
-        api_verifier = GalaxyAPIVerifier(galaxy_instance)
-    
-    return api_verifier
+    """Get or create the global API verifier."""
+    global _api_verifier
+    if _api_verifier is None:
+        _api_verifier = GalaxyAPIVerifier(galaxy_instance)
+    return _api_verifier
