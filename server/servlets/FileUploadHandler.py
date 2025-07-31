@@ -8,6 +8,8 @@ import os
 import logging
 import tempfile
 import shutil
+import threading
+from datetime import datetime
 from typing import Dict, Optional, Callable
 from werkzeug.utils import secure_filename
 from bioblend.galaxy import GalaxyInstance
@@ -133,9 +135,6 @@ class FileUploadHandler:
                     if progress_callback:
                         progress = (uploaded_size / file_size) * 100
                         progress_callback(progress)
-            
-            # Combine chunks in Galaxy (this would require Galaxy tool support)
-            # For now, we'll use the library approach
             
             # Import to history
             datasets = self.gi.libraries.get_library_datasets(library_id)
