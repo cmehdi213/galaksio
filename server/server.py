@@ -15,6 +15,9 @@ from flask import (
 from .servlets import AdminFunctions
 from .servlets import GalaxyAPI
 
+from flask_cors import CORS
+from flask_talisman import Talisman
+
 # HTML regex patterns remain the same
 HTML_REGEX = re.compile(r'((?:src|action|href)=["\'])/')
 JQUERY_REGEX = re.compile(r'(\$\.(?:get|post)\(["\'])/')
