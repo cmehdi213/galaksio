@@ -1,4 +1,4 @@
-# Galaksio - Modern Galaxy Workflow Interface
+# Galaksio 2 (version 0.4.0) - Modern Galaxy Workflow Interface
 
 ![Galaksio Logo](docs/galaksio_logo.png)
 
