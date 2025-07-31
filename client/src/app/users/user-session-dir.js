@@ -13,94 +13,155 @@
 * Lesser General Public License for more details.
 *
 * Contributors:
-*     Rafael Hernandez de Diego <rafahdediego@gmail.com>
-*     Tomas Klingström
-*     Erik Bongcam-Rudloff
-*     and others.
+* Rafael Hernandez de Diego
+* Tomas Klingstrom
+* Erik Bongcam-Rudloff
+* and others.
 *
-* THIS FILE CONTAINS THE FOLLOWING MODULE DECLARATION
-* - workflow-list
-*
+* Modernized for responsive design and enhanced UX
 */
-(function(){
-  var app = angular.module('users.directives.user-session', [
-    'ui.bootstrap',
-    'users.controllers.user-session'
-  ]);
 
-  app.service('loginModal', function ($uibModal, $rootScope) {
-    function assignCurrentUser (user) {
-      $rootScope.currentUser = userF;
-      return user;
-    }
+(function() {
+    'use strict';
 
-    return function() {
-      var instance = $uibModal.open({
-        templateUrl: 'app/users/user-sign-in.tpl.html'
-      })
+    var app = angular.module('users.directives.user-session', [
+        'ui.bootstrap',
+        'users.controllers.user-session'
+    ]);
 
-      return instance.result.then(assignCurrentUser);
-    };
-  });
+    /**
+     * Login Modal Service
+     */
+    app.service('loginModal', function($uibModal, $rootScope) {
+        function assignCurrentUser(user) {
+            $rootScope.currentUser = user;
+            return user;
+        }
+        
+        return function() {
+            var instance = $uibModal.open({
+                templateUrl: 'app/users/user-sign-in.tpl.html',
+                backdrop: 'static',
+                keyboard: false
+            });
+            
+            return instance.result.then(assignCurrentUser);
+        };
+    });
 
-  app.directive("sessionToolbar", function() {
-    return {
-      restrict: 'E',
-      replace:true,
-      template:
-      '      <div class="sessionToolbar" ng-controller="UserSessionController as controller">' +
-      '        <div class="dropdown" ng-show="userInfo.email !== undefined">' +
-      '          <button class="btn btn-sm btn-default dropdown-toggle" id="dropdownMenu1" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">' +
-      '            <i class="fa fa-user" aria-hidden="true"></i> {{userInfo.email}}' +
-      '            <span class="caret"></span>' +
-      '          </button>' +
-      '          <ul class="dropdown-menu" aria-labelledby="dropdownMenu1">' +
-      '            <li class="dropdown-header">Signed in as <b>{{userInfo.email}}</b></li>' +
-      '            <li><a class="clickable" ng-click="controller.signOutButtonHandler()">Sign out</a></li>' +
-      // '            <li role="separator" class="divider"></li>' +
-      // '            <li><a href="' + GALAXY_SERVER_URL + '" target="_blank">Go to Galaxy site</a></li>' +
-      '          </ul>' +
-      '        </div>' +
-      '      </div>'
-    };
-  });
+    /**
+     * Session Toolbar Directive
+     * Modern responsive user session toolbar
+     */
+    app.directive("sessionToolbar", function() {
+        return {
+            restrict: 'E',
+            replace: true,
+            template: `
+                <div class="session-toolbar" ng-if="userInfo.email">
+                    <div class="dropdown">
+                        <button class="btn btn-outline-light dropdown-toggle" type="button" 
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle me-1"></i>
+                            <span class="d-none d-md-inline">{{userInfo.email}}</span>
+                            <i class="fas fa-chevron-down ms-1"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <h6 class="dropdown-header">Signed in as {{userInfo.email}}</h6>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="#" ng-click="userSession.signOutButtonHandler()">
+                                    <i class="fas fa-sign-out-alt me-2"></i>
+                                    Sign out
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{GALAXY_SERVER_URL}}" target="_blank">
+                                    <i class="fas fa-external-link-alt me-2"></i>
+                                    Go to Galaxy site
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            `
+        };
+    });
 
-	app.directive('ngPwcheck', [function () {
-    return {
-      require: 'ngModel',
-      link: function (scope, elem, attrs, ctrl) {
-        var firstPassword = '#' + attrs.ngPwcheck;
-				elem.on('keyup', function () {
-          scope.$apply(function () {
-            var v = elem.val()===$(firstPassword).val();
-            ctrl.$setValidity('pwmatch', v);
-          });
-        });
-				$(firstPassword).on('keyup', function () {
-					scope.$apply(function () {
-						var v = elem.val()===$(firstPassword).val();
-						ctrl.$setValidity('pwmatch', v);
-					});
-				});
-      }
-    }
-  }]);
+    /**
+     * Password Match Directive
+     * Validates that password confirmation matches original password
+     */
+    app.directive("ngPwcheck", [function() {
+        return {
+            require: 'ngModel',
+            link: function(scope, elem, attrs, ctrl) {
+                var firstPassword = '#' + attrs.ngPwcheck;
+                
+                elem.on('keyup', function() {
+                    scope.$apply(function() {
+                        var v = elem.val() === $(firstPassword).val();
+                        ctrl.$setValidity('pwmatch', v);
+                    });
+                });
+                
+                $(firstPassword).on('keyup', function() {
+                    scope.$apply(function() {
+                        var v = elem.val() === $(firstPassword).val();
+                        ctrl.$setValidity('pwmatch', v);
+                    });
+                });
+            }
+        };
+    }]);
 
-  app.directive("userSessionInfoPanel", function() {
-    return {
-      restrict: 'E',
-      replace:true,
-      template:
-      ' <div class="panel panel-container" ng-controller="UserSessionController as controller">' +
-      '   <h4>Your account</h4>' +
-      '   <p><b>Galaxy server:</b><a href="{{GALAXY_SERVER_URL}}">{{GALAXY_SERVER_URL}}</a> </p>' +
-      '   <a class="btn btn-danger btn-sm" style="float: right;width: 130px;margin-right: 50px;" ng-click="controller.signOutButtonHandler()">' +
-      '     <i class="fa fa-sign-out fa-fw" ></i> Close session' +
-      '   </a>' +
-      '   <p><b>Signed in as </b> <i>{{userInfo.email}}</i></p>' +
-      '   <p><b>Disk usage: </b>{{userInfo.disk_usage || "Loading..."}}</p>' +
-      ' </div>'
-    };
-  });
-
+    /**
+     * User Session Info Panel Directive
+     * Modern user information panel with disk usage
+     */
+    app.directive("userSessionInfoPanel", function() {
+        return {
+            restrict: 'E',
+            replace: true,
+            template: `
+                <div class="user-info-panel" ng-if="userInfo.email">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-user-circle me-2"></i>
+                                Your Account
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="info-item">
+                                <label class="info-label">Galaxy Server:</label>
+                                <span class="info-value">{{GALAXY_SERVER_URL}}</span>
+                            </div>
+                            <div class="info-item">
+                                <label class="info-label">Signed in as:</label>
+                                <span class="info-value">{{userInfo.email}}</span>
+                            </div>
+                            <div class="info-item">
+                                <label class="info-label">Username:</label>
+                                <span class="info-value">{{userInfo.username || 'Loading...'}}</span>
+                            </div>
+                            <div class="info-item">
+                                <label class="info-label">Disk Usage:</label>
+                                <span class="info-value">{{userInfo.disk_usage || "Loading..."}}</span>
+                            </div>
+                            <div class="text-center mt-3">
+                                <button class="btn btn-outline-danger btn-sm" 
+                                        ng-click="userSession.signOutButtonHandler()">
+                                    <i class="fas fa-sign-out-alt me-1"></i>
+                                    Close session
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `
+        };
+    });
 })();
