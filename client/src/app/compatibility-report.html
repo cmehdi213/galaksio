@@ -1,0 +1,185 @@
+<div class="container-fluid" ng-controller="CompatibilityReportController" ng-init="init()">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="mb-0">
+                    <i class="fas fa-cogs me-2"></i>
+                    Galaxy Compatibility Report
+                </h2>
+                <div>
+                    <button class="btn btn-outline-primary me-2" ng-click="refreshReport()" ng-disabled="isLoading">
+                        <i class="fas fa-sync-alt me-1"></i>
+                        Refresh
+                    </button>
+                    <button class="btn btn-outline-secondary" ng-click="copyReport()" ng-disabled="!compatibilityReport">
+                        <i class="fas fa-copy me-1"></i>
+                        Copy Report
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Loading State -->
+            <div ng-if="isLoading" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3">Analyzing Galaxy compatibility...</p>
+            </div>
+            
+            <!-- Compatibility Report -->
+            <div ng-if="compatibilityReport && !isLoading">
+                <!-- Overall Status Card -->
+                <div class="card mb-4" ng-class="{'border-success': overallStatus.level === 'success', 'border-warning': overallStatus.level === 'warning', 'border-danger': overallStatus.level === 'danger'}">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <i class="{{overallStatus.icon}} me-3" ng-class="getStatusClass(overallStatus.level)"></i>
+                            <div>
+                                <h5 class="mb-1">{{overallStatus.message}}</h5>
+                                <p class="mb-0 text-muted">{{overallStatus.description}}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Version Information</h6>
+                                <p class="mb-1">{{formatVersionInfo()}}</p>
+                                <small class="text-muted">
+                                    Detected Galaxy version and API compatibility
+                                </small>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Compatibility Status</h6>
+                                <div class="d-flex align-items-center">
+                                    <span class="badge me-2" ng-class="getIssueBadgeClass(overallStatus.level)">
+                                        {{overallStatus.level.toUpperCase()}}
+                                    </span>
+                                    <span>
+                                        {{compatibilityReport.issues_count}} issues found
+                                    </span>
+                                </div>
+                                <small class="text-muted">
+                                    {{compatibilityReport.is_compatible ? 'No critical issues detected' : 'Some issues may affect functionality'}}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Issues Section -->
+                <div ng-if="compatibilityReport.issues_count > 0">
+                    <div class="card mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Compatibility Issues</h5>
+                            <button class="btn btn-sm btn-outline-primary" ng-click="toggleDetails()">
+                                <i class="fas fa-eye me-1"></i>
+                                {{showDetails ? 'Hide' : 'Show'}} Details
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <!-- Critical Issues -->
+                            <div ng-if="issueCategories.critical.length > 0" class="mb-4">
+                                <h6 class="text-danger">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Critical Issues ({{issueCategories.critical.length}})
+                                </h6>
+                                <div class="alert alert-danger" ng-repeat="issue in issueCategories.critical">
+                                    <strong>{{issue.message}}</strong>
+                                    <br>
+                                    <small class="text-muted">{{issue.recommendation}}</small>
+                                </div>
+                            </div>
+                            
+                            <!-- Warning Issues -->
+                            <div ng-if="issueCategories.warning.length > 0" class="mb-4">
+                                <h6 class="text-warning">
+                                    <i class="fas fa-exclamation-circle me-2"></i>
+                                    Warnings ({{issueCategories.warning.length}})
+                                </h6>
+                                <div class="alert alert-warning" ng-repeat="issue in issueCategories.warning">
+                                    <strong>{{issue.message}}</strong>
+                                    <br>
+                                    <small class="text-muted">{{issue.recommendation}}</small>
+                                </div>
+                            </div>
+                            
+                            <!-- Info Issues -->
+                            <div ng-if="issueCategories.info.length > 0" class="mb-4">
+                                <h6 class="text-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Information ({{issueCategories.info.length}})
+                                </h6>
+                                <div class="alert alert-info" ng-repeat="issue in issueCategories.info">
+                                    <strong>{{issue.message}}</strong>
+                                    <br>
+                                    <small class="text-muted">{{issue.recommendation}}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recommendations -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-lightbulb me-2"></i>
+                            Recommendations
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div ng-if="compatibilityReport.recommendations && compatibilityReport.recommendations.length > 0">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex align-items-start" ng-repeat="recommendation in compatibilityReport.recommendations">
+                                    <i class="fas fa-chevron-right text-primary me-3 mt-1"></i>
+                                    <div>{{recommendation}}</div>
+                                </li>
+                            </ul>
+                        </div>
+                        <div ng-if="!compatibilityReport.recommendations || compatibilityReport.recommendations.length === 0">
+                            <div class="alert alert-success mb-0">
+                                <i class="fas fa-check-circle me-2"></i>
+                                No specific recommendations - your Galaxy instance is well-compatible!
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Detailed Report (Collapsible) -->
+                <div ng-if="showDetails" class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-code me-2"></i>
+                            Technical Details
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <pre class="bg-light p-3 rounded"><code>{{compatibilityReport | json}}</code></pre>
+                    </div>
+                </div>
+                
+                <!-- Success Message -->
+                <div ng-if="compatibilityReport.issues_count === 0" class="card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-check-circle text-success fa-3x mb-3"></i>
+                        <h5 class="text-success">Perfect Compatibility!</h5>
+                        <p class="text-muted">
+                            Your Galaxy instance is fully compatible with Galaksio 2. 
+                            All features should work without any issues.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- No Report State -->
+            <div ng-if="!compatibilityReport && !isLoading" class="text-center py-5">
+                <i class="fas fa-cogs fa-3x mb-3 text-muted"></i>
+                <p class="text-muted">Unable to load compatibility report</p>
+                <button class="btn btn-primary" ng-click="loadCompatibilityReport()">
+                    <i class="fas fa-sync-alt me-1"></i>
+                    Try Again
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
