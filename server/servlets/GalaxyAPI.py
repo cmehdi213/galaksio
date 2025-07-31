@@ -1,6 +1,6 @@
 """
 Galaksio Galaxy API Integration
-Updated for Galaxy 25.0 with enhanced authentication and error handling
+Updated for Galaxy 25.0 with enhanced compatibility layer and error handling
 """
 
 # (C) Copyright 2016 SLU Global Bioinformatics Centre, SLU
@@ -36,8 +36,7 @@ from flask import request, jsonify, current_app
 from .AuthHandler import authenticate_galaxy, GalaxyAuthHandler
 from .WorkflowTracker import get_workflow_tracker, track_workflow_execution
 from .ErrorHandler import handle_galaxy_error, GalaksioError, AuthenticationError
-# Paired Ends
-from .PairedReadsHandler import get_paired_reads_handler
+from .GalaxyAPIVerifier import get_api_verifier
 
 logger = logging.getLogger(__name__)
 
@@ -88,6 +87,9 @@ def generateWorkflowReport(request, settings):
         gi = get_galaxy_instance(settings)
         gi_objects = get_galaxy_objects_instance(settings)
         
+        # Get API verifier for compatibility checks
+        verifier = get_api_verifier(gi)
+        
         workflow_steps = {}
         for step in workflow.get("steps"):
             workflow_steps[step.get("uuid")] = step
@@ -108,7 +110,8 @@ def generateWorkflowReport(request, settings):
         return {
             'success': True,
             'workflow': workflow,
-            'invocation': invocation
+            'invocation': invocation,
+            'compatibility_report': verifier.get_compatibility_report()
         }
         
     except Exception as e:
@@ -124,17 +127,20 @@ def executeWorkflow(request, settings):
         workflow_id = request.json.get("workflow_id")
         history_id = request.json.get("history_id")
         parameters = request.json.get("parameters", {})
+        inputs = request.json.get("inputs", {})
         
         # Get authenticated Galaxy instance
         gi = get_galaxy_instance(settings)
         
-        # Execute workflow
-        invocation = gi.workflows.invoke_workflow(
-            workflow_id,
+        # Get API verifier for compatibility checks
+        verifier = get_api_verifier(gi)
+        
+        # Use safe workflow invocation with compatibility layer
+        invocation = verifier.get_safe_workflow_invocation(
+            workflow_id=workflow_id,
             history_id=history_id,
-            inputs=parameters.get("inputs", {}),
-            params=parameters.get("params", {}),
-            import_inputs_to_history=True
+            inputs=inputs,
+            params=parameters
         )
         
         invocation_id = invocation.get("id")
@@ -147,7 +153,8 @@ def executeWorkflow(request, settings):
         return {
             'success': True,
             'invocation_id': invocation_id,
-            'message': 'Workflow execution started'
+            'message': 'Workflow execution started',
+            'compatibility_report': verifier.get_compatibility_report()
         }
         
     except Exception as e:
@@ -174,16 +181,22 @@ def getWorkflowStatus(request, settings):
                 'status': status
             }
         else:
-            # Fallback to direct Galaxy API call
-            invocation = gi.invocations.show_invocation(invocation_id)
-            return {
-                'success': True,
-                'status': {
-                    'invocation_id': invocation_id,
-                    'state': invocation.get('state'),
-                    'steps': invocation.get('steps', [])
+            # Fallback to direct Galaxy API call with compatibility layer
+            verifier = get_api_verifier(gi)
+            try:
+                invocation = gi.invocations.show_invocation(invocation_id)
+                return {
+                    'success': True,
+                    'status': {
+                        'invocation_id': invocation_id,
+                        'state': invocation.get('state'),
+                        'steps': invocation.get('steps', []),
+                        'compatibility_report': verifier.get_compatibility_report()
+                    }
                 }
-            }
+            except Exception as e:
+                logger.error(f"Failed to get invocation status: {e}")
+                return handle_galaxy_error(e, {'function': 'getWorkflowStatus'})
         
     except Exception as e:
         logger.error(f"Error getting workflow status: {e}")
@@ -284,16 +297,41 @@ def testConnection(request, settings):
         auth = get_auth_handler(settings)
         success, message = auth.test_connection()
         
+        # Get API verifier for compatibility report
+        verifier = get_api_verifier(auth.get_instance())
+        compatibility_report = verifier.get_compatibility_report()
+        
         return {
             'success': success,
-            'message': message
+            'message': message,
+            'compatibility_report': compatibility_report
         }
         
     except Exception as e:
         logger.error(f"Error testing connection: {e}")
         return handle_galaxy_error(e, {'function': 'testConnection'})
 
-# Paired end automation
+def getCompatibilityReport(request, settings):
+    """
+    Get Galaxy API compatibility report
+    """
+    try:
+        # Get authenticated Galaxy instance
+        gi = get_galaxy_instance(settings)
+        
+        # Get API verifier
+        verifier = get_api_verifier(gi)
+        compatibility_report = verifier.get_compatibility_report()
+        
+        return {
+            'success': True,
+            'compatibility_report': compatibility_report
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting compatibility report: {e}")
+        return handle_galaxy_error(e, {'function': 'getCompatibilityReport'})
+
 def detectPairedReads(request, settings):
     """
     Detect paired-end reads in a Galaxy history.
@@ -310,11 +348,18 @@ def detectPairedReads(request, settings):
         # Get authenticated Galaxy instance
         gi = get_galaxy_instance(settings)
         
+        # Get API verifier for compatibility checks
+        verifier = get_api_verifier(gi)
+        
         # Get paired reads handler
+        from .PairedReadsHandler import get_paired_reads_handler
         paired_handler = get_paired_reads_handler(gi)
         
         # Detect paired reads
         result = paired_handler.detect_paired_reads(history_id)
+        
+        # Add compatibility report
+        result['compatibility_report'] = verifier.get_compatibility_report()
         
         return result
         
@@ -339,13 +384,40 @@ def createPairedCollection(request, settings):
         # Get authenticated Galaxy instance
         gi = get_galaxy_instance(settings)
         
+        # Get API verifier for compatibility checks
+        verifier = get_api_verifier(gi)
+        
         # Get paired reads handler
+        from .PairedReadsHandler import get_paired_reads_handler
         paired_handler = get_paired_reads_handler(gi)
         
-        # Create paired collection
-        result = paired_handler.create_paired_collection(history_id, paired_group)
+        # Create paired collection using safe method
+        collection_description = {
+            'collection_type': 'paired',
+            'name': paired_group.get('suggested_name', 'paired_collection'),
+            'elements': [
+                {
+                    'name': 'forward',
+                    'src': 'hda',
+                    'id': paired_group['files'][0]['id']
+                },
+                {
+                    'name': 'reverse',
+                    'src': 'hda',
+                    'id': paired_group['files'][1]['id']
+                }
+            ]
+        }
         
-        return result
+        result = verifier.create_safe_collection(history_id, collection_description)
+        
+        return {
+            'success': True,
+            'collection_id': result.get('id'),
+            'collection_name': paired_group.get('suggested_name', 'paired_collection'),
+            'message': f'Created paired collection: {paired_group.get("suggested_name", "paired_collection")}',
+            'compatibility_report': verifier.get_compatibility_report()
+        }
         
     except Exception as e:
         logger.error(f"Error creating paired collection: {e}")
@@ -368,11 +440,18 @@ def autoPairAllReads(request, settings):
         # Get authenticated Galaxy instance
         gi = get_galaxy_instance(settings)
         
+        # Get API verifier for compatibility checks
+        verifier = get_api_verifier(gi)
+        
         # Get paired reads handler
+        from .PairedReadsHandler import get_paired_reads_handler
         paired_handler = get_paired_reads_handler(gi)
         
         # Auto-pair all reads
         result = paired_handler.auto_pair_all_reads(history_id, create_collections)
+        
+        # Add compatibility report
+        result['compatibility_report'] = verifier.get_compatibility_report()
         
         return result
         
@@ -404,3 +483,36 @@ def getPairedReadPatterns(request, settings):
     except Exception as e:
         logger.error(f"Error getting paired read patterns: {e}")
         return handle_galaxy_error(e, {'function': 'getPairedReadPatterns'})
+
+def getHistoryContents(request, settings):
+    """
+    Get history contents with Galaxy 25.0 compatibility
+    """
+    try:
+        history_id = request.json.get("history_id")
+        
+        if not history_id:
+            return {
+                'success': False,
+                'error': 'History ID is required'
+            }
+        
+        # Get authenticated Galaxy instance
+        gi = get_galaxy_instance(settings)
+        
+        # Get API verifier for compatibility checks
+        verifier = get_api_verifier(gi)
+        
+        # Get history contents using safe method
+        contents = verifier.get_safe_history_contents(history_id, contents=True)
+        
+        return {
+            'success': True,
+            'contents': contents,
+            'count': len(contents),
+            'compatibility_report': verifier.get_compatibility_report()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting history contents: {e}")
+        return handle_galaxy_error(e, {'function': 'getHistoryContents'})
