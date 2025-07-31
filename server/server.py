@@ -1,214 +1,205 @@
+#!/usr/bin/env python3
 """
-Updated server.py for Galaxy 25.0 compatibility
+Galaksio Server - Main Flask Application
+Updated for Galaxy 25.0 with enhanced security and error handling
 """
 
+# (C) Copyright 2016 SLU Global Bioinformatics Centre, SLU
+# (http://sgbc.slu.se) and the B3Africa Project (http://www.b3africa.org/).
+#
+# All rights reserved. This program and the accompanying materials
+# are made available under the terms of the GNU Lesser General Public License
+# (LGPL) version 3 which accompanies this distribution, and is available at
+# http://www.gnu.org/licenses/lgpl.html
+#
+# This library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
+#
+# Contributors:
+# Rafael Hernandez de Diego
+# Tomas Klingstrom
+# Erik Bongcam-Rudloff
+# and others.
+#
+# Updated for Galaxy 25.0 compatibility
+#
+
+import os
+import sys
 import logging
-import re
-from os import remove as removeFile
-import requests
-from bioblend.galaxy import GalaxyInstance
-from bioblend.galaxy.objects import GalaxyInstance as GalaxyInstanceObjects
-from flask import (
-    Flask, json, jsonify, request, Response as flask_response,
-    send_from_directory, render_template_string
-)
-from .servlets import AdminFunctions
-from .servlets import GalaxyAPI
-
+import json
+from flask import Flask, request, jsonify, send_from_directory, make_response
 from flask_cors import CORS
 from flask_talisman import Talisman
+from werkzeug.utils import secure_filename
 
-# HTML regex patterns remain the same
-HTML_REGEX = re.compile(r'((?:src|action|href)=["\'])/')
-JQUERY_REGEX = re.compile(r'(\$\.(?:get|post)\(["\'])/')
-JS_LOCATION_REGEX = re.compile(r'((?:window|document)\.location.\*=.\*["\'])/')
-CSS_REGEX = re.compile(r'(url\(["\']?)/')
-REGEXES = [HTML_REGEX, JQUERY_REGEX, JS_LOCATION_REGEX, CSS_REGEX]
+# Add server directory to path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-class Application(object):
-    def __init__(self):
-        self.app = Flask(__name__)
-        self.isFirstLaunch = False
-        self.isDocker = False
-        self.settings = AdminFunctions.readConfigurationFile()
-        self.app.config['MAX_CONTENT_LENGTH'] = self.settings.MAX_CONTENT_LENGTH * pow(1024, 2)
-        
-        # Configure logging
-        logging.basicConfig(level=getattr(logging, self.settings.LOG_LEVEL))
-        self.log = logging.getLogger(__name__)
-        
-        self.log("Starting application...")
-        self.log(f"Galaksio starting with Galaxy server: {self.settings.GALAXY_SERVER}")
-        
-        # Set up routes
-        self.setup_routes()
+# Import configuration
+from resources.galaxy_settings import settings
+
+# Import servlets
+from servlets.GalaxyAPI import (
+    generateWorkflowReport,
+    executeWorkflow,
+    getWorkflowStatus,
+    uploadFile,
+    getUploadStatus,
+    testConnection
+)
+
+# Import error handlers
+from servlets.ErrorHandler import register_error_handlers
+
+# Initialize Flask app
+def create_app():
+    app = Flask(__name__, 
+                static_folder='../client/src',
+                template_folder='../client/src')
     
-    def setup_routes(self):
-        """Setup all Flask routes"""
-        
-        @self.app.route(self.settings.SERVER_SUBDOMAIN + '/')
-        def main():
-            if self.isFirstLaunch:
-                self.log("First launch detected, showing install form")
-                return send_from_directory(self.settings.ROOT_DIRECTORY + 'client/src/', 'install.html')
-            else:
-                return send_from_directory(self.settings.ROOT_DIRECTORY + 'client/src/', 'index.html')
-
-        @self.app.route(self.settings.SERVER_SUBDOMAIN + '/<path:filename>')
-        def get_static(filename):
-            return send_from_directory(self.settings.ROOT_DIRECTORY + 'client/src/', filename)
-
-        @self.app.route(self.settings.SERVER_SUBDOMAIN + '/tmp/<path:filename>')
-        def get_tmp_static(filename):
-            return send_from_directory(self.settings.TMP_DIRECTORY, filename)
-
-        @self.app.route(self.settings.SERVER_SUBDOMAIN + '/api/<path:service>', methods=['OPTIONS', 'POST', 'GET', 'DELETE', 'PUT'])
-        def forward_request(service, method=None):
-            return self.handle_api_request(service, method)
-
-        @self.app.route(self.settings.SERVER_SUBDOMAIN + '/other/<path:service>', methods=['OPTIONS', 'POST', 'GET', 'DELETE', 'PUT'])
-        def other_request(service, method=None):
-            return self.handle_other_request(service, method)
-
-    def handle_api_request(self, service, method=None):
-        """Handle API requests with Galaxy 25.0 compatibility"""
-        try:
-            auth = None
-            if request.authorization is not None and len(request.authorization) > 0:
-                auth = ()
-                for i in request.authorization:
-                    auth = auth + (request.authorization[i],)
-
-            if method is None:
-                method = request.method
-
-            if service == "upload/":
-                return self.handle_file_upload()
-            elif service == "signup/":
-                return self.handle_signup()
-            else:
-                return self.forward_to_galaxy_api(service, method, auth)
-
-        except Exception as e:
-            self.log(f"Error in API request: {str(e)}")
-            return jsonify({'error': str(e)}), 500
-
-    def handle_file_upload(self):
-        """Handle file uploads with Galaxy 25.0 compatibility"""
-        try:
-            if self.settings.SAFE_UPLOAD:
-                self.log("New upload request detected")
-                
-                data = dict(request.form)
-                tmp_files = AdminFunctions.storeTmpFiles(request.files, self.settings.TMP_DIRECTORY)
-                self.log("All files were temporary stored at: " + ", ".join(tmp_files))
-                
-                history_id = data.get("history_id")[0]
-                galaxy_key = data.get("key")[0]
-                
-                # Use updated BioBlend for Galaxy 25.0
-                gi = GalaxyInstance(self.settings.GALAXY_SERVER, galaxy_key)
-                responses = []
-                
-                for tmp_file in tmp_files:
-                    try:
-                        response = gi.tools.upload_file(tmp_file, history_id)
-                        responses.append(response)
-                        self.log(f"Successfully uploaded file: {tmp_file}")
-                    except Exception as e:
-                        self.log(f"Error uploading file {tmp_file}: {str(e)}")
-                        responses.append({'error': str(e), 'file': tmp_file})
-                
-                # Clean up temporary files
-                for tmp_file in tmp_files:
-                    try:
-                        removeFile(tmp_file)
-                    except:
-                        pass
-                
-                return jsonify({'success': True, 'responses': responses})
-            else:
-                # Forward directly to Galaxy API
-                return self.forward_to_galaxy_api("tools", request.method, None)
-
-        except Exception as e:
-            self.log(f"Error in file upload: {str(e)}")
-            return jsonify({'error': str(e)}), 500
-
-    def handle_signup(self):
-        """Handle user signup"""
-        try:
-            self.log("New sign up request detected")
-            service = "/user/create?cntrller=user"
-            data = dict(request.form)
-            
-            resp = requests.request(
-                method=request.method,
-                url=self.settings.GALAXY_SERVER + service,
-                params=dict(request.args),
-                headers={'content-type': 'application/x-www-form-urlencoded'},
-                data=data,
-                auth=request.authorization,
-                cookies=request.cookies,
-                allow_redirects=False
-            )
-            
-            return self.create_response(resp)
-            
-        except Exception as e:
-            self.log(f"Error in signup: {str(e)}")
-            return jsonify({'error': str(e)}), 500
-
-    def forward_to_galaxy_api(self, service, method, auth):
-        """Forward request to Galaxy API"""
-        try:
-            service = "/api/" + service
-            self.log(f"Forwarding request to Galaxy API: {service}")
-            
-            resp = requests.request(
-                method=method,
-                url=self.settings.GALAXY_SERVER + service,
-                params=dict(request.args),
-                data=request.get_data(),
-                auth=auth,
-                cookies=request.cookies,
-                allow_redirects=False
-            )
-            
-            return self.create_response(resp)
-            
-        except Exception as e:
-            self.log(f"Error forwarding to Galaxy API: {str(e)}")
-            return jsonify({'error': str(e)}), 500
-
-    def handle_other_request(self, service, method=None):
-        """Handle other special requests"""
-        try:
-            if service == 'workflows/report/':
-                file_path = GalaxyAPI.generateWorkflowReport(request, self.settings)
-                return jsonify({'success': True, 'path': file_path})
-            return ""
-            
-        except Exception as e:
-            self.log(f"Error in other request: {str(e)}")
-            return jsonify({'error': str(e)}), 500
-
-    def create_response(self, resp):
-        """Create Flask response from requests response"""
-        headers = []
-        excluded_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
-        headers = [(name, value) for (name, value) in list(resp.raw.headers.items()) 
-                   if name.lower() not in excluded_headers]
-        
-        self.log("Done! Returning response...")
-        response = flask_response(resp.content, resp.status_code, headers)
+    # Configure CORS for modern browsers
+    CORS(app, 
+         resources={
+             r"/*": {
+                 "origins": ["*"],  # Configure appropriately for production
+                 "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+                 "allow_headers": ["Content-Type", "Authorization", "X-API-Key"],
+                 "expose_headers": ["Content-Type", "X-Total-Count"],
+                 "max_age": 3600
+             }
+         })
+    
+    # Security headers with Talisman
+    Talisman(app, 
+             force_https=False,  # Set to True in production
+             strict_transport_security=False,
+             session_cookie_secure=False,
+             content_security_policy={
+                 'default-src': "'self'",
+                 'script-src': "'self' 'unsafe-inline' 'unsafe-eval'",
+                 'style-src': "'self' 'unsafe-inline'",
+                 'img-src': "'self' data: https:",
+                 'font-src': "'self' data:",
+                 'connect-src': "'self' *",  # Allow connections to Galaxy instances
+             })
+    
+    # Configure logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    
+    # Register error handlers
+    register_error_handlers(app)
+    
+    # Add security headers
+    @app.after_request
+    def add_security_headers(response):
+        """Add additional security headers."""
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
         return response
+    
+    # Add preflight request handler
+    @app.route('/<path:path>', methods=['OPTIONS'])
+    def handle_preflight(path):
+        """Handle CORS preflight requests."""
+        response = make_response()
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-API-Key')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        return response
+    
+    # Static file serving
+    @app.route('/')
+    def index():
+        return send_from_directory(app.static_folder, 'index.html')
+    
+    @app.route('/<path:path>')
+    def static_files(path):
+        return send_from_directory(app.static_folder, path)
+    
+    # API Routes
+    @app.route('/api/test_connection', methods=['POST'])
+    def test_connection():
+        """Test connection to Galaxy instance."""
+        try:
+            result = testConnection(request, settings)
+            return jsonify(result)
+        except Exception as e:
+            logger.error(f"Error in test_connection: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    @app.route('/api/execute_workflow', methods=['POST'])
+    def execute_workflow():
+        """Execute a Galaxy workflow."""
+        try:
+            result = executeWorkflow(request, settings)
+            return jsonify(result)
+        except Exception as e:
+            logger.error(f"Error in execute_workflow: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    @app.route('/api/generate_workflow_report', methods=['POST'])
+    def generate_workflow_report():
+        """Generate workflow execution report."""
+        try:
+            result = generateWorkflowReport(request, settings)
+            return jsonify(result)
+        except Exception as e:
+            logger.error(f"Error in generate_workflow_report: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    @app.route('/api/get_workflow_status', methods=['POST'])
+    def get_workflow_status():
+        """Get workflow execution status."""
+        try:
+            result = getWorkflowStatus(request, settings)
+            return jsonify(result)
+        except Exception as e:
+            logger.error(f"Error in get_workflow_status: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    @app.route('/api/upload_file', methods=['POST'])
+    def upload_file():
+        """Upload file to Galaxy."""
+        try:
+            result = uploadFile(request, settings)
+            return jsonify(result)
+        except Exception as e:
+            logger.error(f"Error in upload_file: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    @app.route('/api/get_upload_status', methods=['POST'])
+    def get_upload_status():
+        """Get file upload status."""
+        try:
+            result = getUploadStatus(request, settings)
+            return jsonify(result)
+        except Exception as e:
+            logger.error(f"Error in get_upload_status: {e}")
+            return jsonify({'success': False, 'error': str(e)}), 500
+    
+    # Health check endpoint
+    @app.route('/health')
+    def health_check():
+        """Health check endpoint."""
+        return jsonify({'status': 'healthy', 'version': '0.4.0'})
+    
+    return app
 
-    def run(self, host=None, port=None, debug=None):
-        """Run the Flask application"""
-        host = host or self.settings.SERVER_HOST
-        port = port or self.settings.SERVER_PORT
-        debug = debug or False
-        
-        self.log(f"Starting Galaksio server on {host}:{port}")
-        self.app.run(host=host, port=port, debug=debug)
+# Create the Flask application
+app = create_app()
+
+if __name__ == '__main__':
+    # Run the application
+    app.run(
+        host=settings.HOST,
+        port=settings.PORT,
+        debug=settings.DEBUG,
+        threaded=True
+    )
