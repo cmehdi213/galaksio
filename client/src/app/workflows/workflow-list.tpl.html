@@ -1,103 +1,185 @@
-<div ng-controller="WorkflowListController as controller">
-	<nav class="navbar navbar-default navbar-top title-bar">
-		<h1>Workflows <small>Selection</small></h1>
-	</nav>
-	<div class="navbar-form navbar-default top-toolbar" role="search">
-		<div class="row">
-			<div class="col-sm-8">
-				<div class="input-group" style="width: 100%;margin-bottom: 4px;">
-					<input type="text" class="form-control" placeholder="Search for..." ng-model="searchFor" ng-enter="controller.applySearchHandler()">
-					<span class="input-group-btn">
-						<button class="btn btn-default" type="button" ng-click="controller.applySearchHandler()">
-							<span class="glyphicon glyphicon-search"></span>
-						</button>
-						<a ng-click="controller.removeAllFiltersHandler();" style="margin-left:20px; font-size: 14px; cursor: pointer;"><i class="fa fa-undo" style="margin-right:5px"></i>Reset search</a>
-					</span>
-				</div><!-- /input-group -->
+<div class="workflows-container">
+    <!-- Header Section -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1 class="page-title">
+                    <i class="fas fa-project-diagram me-2"></i>
+                    Workflows
+                </h1>
+                <p class="page-subtitle">Manage and run your Galaxy workflows</p>
+            </div>
+            <div class="col-md-6">
+                <div class="header-actions">
+                    <div class="input-group search-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" class="form-control" placeholder="Search workflows..." 
+                               ng-model="workflowList.searchQuery">
+                    </div>
+                    <button class="btn btn-primary ms-2" ng-click="workflowList.refreshWorkflows()">
+                        <i class="fas fa-sync-alt me-1"></i>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-				<div class="currentSearchTagContainer">
-					<i style="font-size:10px">Tags:</i>
-					<i class="tag" ng-repeat="item in selectedTags">
-						<span class="tag-name ">
-							<i class="fa fa-times" ng-click="controller.removeFilterHandler(item);"></i>{{item}}
-						</span>
-					</i>
-				</div>
-			</div>
-			<div class="tag-select-container col-sm-4" ng-mouseover="showTags=true" ng-mouseleave="showTags=false">
-					<div class="tag-select-button">
-						<i class="fa fa-tags" style="padding-right:5px;"></i>| Add a tag</div>
-					<div ng-show="showTags" class="tag-select-panel">
-						<input type="text" placeholder="Search.." ng-model="tagKey">
-						<div class="tag-select-list">
-							<i ng-show="isLoading" class="ng-binding" style="line-height: 30px;font-size: 15px;color: #777;margin-left: 15px;">
-								<i class="fa fa-spinner fa-pulse fa-fw"></i> Loading tags...
-							</i>
-							<div ng-repeat="item in tags | orderBy:'-times' | limitTo: tagFilterLimit : tagFilterBegin | filter:controller.tagSearch" ng-click="controller.filterByTag(item.name);">
-								<i class="tag {{item.color}}">{{item.times}}</i><i> {{item.name}} </i>
-							</div>
-						</div>
-						<span ng-click="tagFilterBegin = tagFilterBegin - tagFilterLimit" ng-show="tagFilterBegin > 0"><< Previous</span>
-						<span ng-click="tagFilterBegin = tagFilterBegin + tagFilterLimit" ng-hide="tagFilterLimit > tags.length || tags.length <= tagFilterBegin + tagFilterLimit" style="float:right;">Next >></span>
-					</div>
-			</div>
-		</div>
-	</div>
-	<div class="navbar-form">
-		<div style="margin: auto;display: block;max-width: 625px;">
-			<ul class="nav navbar-nav">
-				<li class="dropdown">
-					<label for="sortBySelector">Show:</label>
-					<select style="display:inline-block;" class="form-control" id="sortBySelector" ng-model="show" ng-init="show = 'my_workflows'" ng-change="controller.showWorkflowChooserChangeHandler();" >
-						<option value="my_workflows">Only my workflows</option>
-						<option value="all_workflows">All public workflows</option>
-					</select>
-				</li>
-			</ul>
-			<ul class="nav navbar-nav" style="margin-left: 15px;">
-				<li class="dropdown">
-					<label for="sortBySelector">Sort by:</label>
-					<select class="form-control" id="sortBySelector" ng-model="sortBy" ng-init="sortBy = 'name'">
-						<option value="name">Name</option>
-						<option value="owner">Author</option>
-					</select>
-				</li>
-			</ul>
-			<i ng-show="isLoading" class="ng-binding" style="line-height: 30px;font-size: 15px;color: #777;margin-left: 15px;">
-				<i class="fa fa-spinner fa-pulse fa-fw"></i> Loading workflows...
-			</i>
-			<i ng-show="!isLoading && filters==['subworkflow']">
-				Showing results for {{ displaySearchWords }}
-			</i>
-			<i ng-show="!isLoading" class="ng-binding" style="line-height: 30px;font-size: 15px;color: #777;margin-left: 15px;">
-				Found {{filteredWorkflows}} workflows
-				<a ng-click="controller.retrieveWorkflowsData(show,true);" style="margin-left:10px; font-size: 10px; cursor: pointer;"><i class="fa fa-refresh"></i>Refresh list</a>
-			</i>
-		</div>
-	</div>
-	<div class="row workflow-card-container" id="workflowContainer">
-		<div class="workflow-card" style="max-width: 1200px;margin: auto;background: #fff;padding: 10px; min-height: 150px;">
-		<h4>About workflows</h4>
-		<p class="description">
-			Workflows are analyses that are intended to be executed (one ore more times) with different user-provided input datasets. Workflow can be reused over and over, not only reducing tedious work, but enhancing reproducibility by applying the same exact methods to all of your data.<br>
-			From the perspective of Galaksio, workflows must be designed by skilled users (e.g. a bioinformatician) using the Galaxy tools for workflow edition.
-		</p>
-		<a href="http://galaksio.readthedocs.io/en/latest/1_2_concepts/#what-is-a-workflow-in-galaxy" target="_blank"><i class="fa fa-question-circle"></i> Learn more about workflows</a>
-	</div>
-	<h3 ng-show="isLoading" class="ng-binding" style="color: #777;text-align:center;">
-		<i class="fa fa-spinner fa-pulse fa-fw"></i> Loading workflows list...
-	</h3>
-	<workflow-card  ng-repeat="workflow in workflows | filter:filterWorkflows() | orderBy : sortBy | limitTo : visibleWorkflows" after-render="controller.retrieveWorkflowDetails(workflow);"></workflow-card>
-	<div class="row" style="text-align: center;">
-		<button class="btn btn-lg btn-success" type="button" ng-click="controller.showMoreWorkflowsHandler()" ng-show="(filteredWorkflows-visibleWorkflows)>0">
-			Show more workflows ({{filteredWorkflows-visibleWorkflows}} left)
-		</button>
-	</div>
-</div>
-<nav class=" navbar-fixed-bottom" style="left: initial;">
-	<back-top scroll-speed=600 button-theme="btn btn-default btn-sm navbar-right"></back-top>
-	<!-- <a class="btn btn-default btn-sm navbar-right" ng-click="" style="font-size: 9px;margin: 5px 10px;">
+    <!-- Filter and Sort Section -->
+    <div class="filters-section">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="filter-pills">
+                    <button class="filter-pill" 
+                            ng-class="{active: workflowList.currentFilter === 'all'}"
+                            ng-click="workflowList.setFilter('all')">
+                        All Workflows
+                    </button>
+                    <button class="filter-pill" 
+                            ng-class="{active: workflowList.currentFilter === 'recent'}"
+                            ng-click="workflowList.setFilter('recent')">
+                        Recent
+                    </button>
+                    <button class="filter-pill" 
+                            ng-class="{active: workflowList.currentFilter === 'popular'}"
+                            ng-click="workflowList.setFilter('popular')">
+                        Popular
+                    </button>
+                    <button class="filter-pill" 
+                            ng-class="{active: workflowList.currentFilter === 'favorites'}"
+                            ng-click="workflowList.setFilter('favorites')">
+                        Favorites
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="sort-dropdown">
+                    <select class="form-select" ng-model="workflowList.sortBy">
+                        <option value="name">Sort by Name</option>
+                        <option value="date">Sort by Date</option>
+                        <option value="popularity">Sort by Popularity</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
 
-</a> -->
-</nav>
+    <!-- Loading State -->
+    <div class="loading-state" ng-if="workflowList.isLoading">
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading workflows...</p>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" ng-if="!workflowList.isLoading && workflowList.filteredWorkflows.length === 0">
+        <div class="text-center py-5">
+            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+            <h3>No workflows found</h3>
+            <p class="text-muted">Try adjusting your search or filter criteria</p>
+            <button class="btn btn-primary" ng-click="workflowList.refreshWorkflows()">
+                <i class="fas fa-sync-alt me-1"></i>
+                Refresh Workflows
+            </button>
+        </div>
+    </div>
+
+    <!-- Workflows Grid -->
+    <div class="workflows-grid" ng-if="!workflowList.isLoading && workflowList.filteredWorkflows.length > 0">
+        <div class="row">
+            <div class="col-lg-4 col-md-6" ng-repeat="workflow in workflowList.filteredWorkflows">
+                <div class="workflow-card">
+                    <div class="workflow-header">
+                        <div class="workflow-icon">
+                            <i class="fas fa-project-diagram"></i>
+                        </div>
+                        <div class="workflow-actions">
+                            <button class="btn btn-sm btn-outline-primary" 
+                                    ng-click="workflowList.toggleFavorite(workflow)"
+                                    title="{{workflow.isFavorite ? 'Remove from favorites' : 'Add to favorites'}}">
+                                <i class="fas" 
+                                   ng-class="workflowList.isFavorite(workflow) ? 'fa-heart' : 'fa-heart'"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="workflow-body">
+                        <h4 class="workflow-title">{{workflow.name}}</h4>
+                        <p class="workflow-description">{{workflow.description || 'No description available'}}</p>
+                        
+                        <div class="workflow-meta">
+                            <div class="meta-item">
+                                <i class="fas fa-calendar me-1"></i>
+                                <span>{{workflow.create_time | date:'short'}}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-user me-1"></i>
+                                <span>{{workflow.owner}}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-star me-1"></i>
+                                <span>{{workflow.popularity || 0}}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="workflow-tags" ng-if="workflow.tags && workflow.tags.length > 0">
+                            <span class="tag" ng-repeat="tag in workflow.tags">{{tag}}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="workflow-footer">
+                        <div class="workflow-stats">
+                            <div class="stat">
+                                <i class="fas fa-play"></i>
+                                <span>{{workflow.run_count || 0}}</span>
+                            </div>
+                            <div class="stat">
+                                <i class="fas fa-check"></i>
+                                <span>{{workflow.success_rate || 0}}%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="workflow-buttons">
+                            <button class="btn btn-primary btn-sm" 
+                                    ng-click="workflowList.runWorkflow(workflow)">
+                                <i class="fas fa-play me-1"></i>
+                                Run
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" 
+                                    ng-click="workflowList.viewWorkflow(workflow)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-section" ng-if="workflowList.filteredWorkflows.length > 0">
+        <nav aria-label="Workflows pagination">
+            <ul class="pagination justify-content-center">
+                <li class="page-item" ng-class="{disabled: workflowList.currentPage === 1}">
+                    <a class="page-link" href="#" ng-click="workflowList.previousPage()">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                <li class="page-item" ng-repeat="page in workflowList.pages" 
+                    ng-class="{active: page === workflowList.currentPage}">
+                    <a class="page-link" href="#" ng-click="workflowList.goToPage(page)">{{page}}</a>
+                </li>
+                <li class="page-item" ng-class="{disabled: workflowList.currentPage === workflowList.totalPages}">
+                    <a class="page-link" href="#" ng-click="workflowList.nextPage()">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
 </div>
