@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  galaksio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: galaksio-app
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./server/conf:/app/server/conf
+      - ./server/log:/app/server/log
+      - galaksio-data:/app/server/data
+    environment:
+      - GALAKSIO_CONFIG=/app/server/conf/serverconf.cfg
+      - GALAXY_SERVER=https://usegalaxy.org/
+      - FLASK_ENV=production
+      - PYTHONPATH=/app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - galaksio-network
+
+  # Optional: Redis for session management and caching
+  redis:
+    image: redis:7-alpine
+    container_name: galaksio-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    networks:
+      - galaksio-network
+
+  # Optional: PostgreSQL for advanced features (if needed)
+  postgres:
+    image: postgres:15-alpine
+    container_name: galaksio-postgres
+    environment:
+      - POSTGRES_DB=galaksio
+      - POSTGRES_USER=galaksio
+      - POSTGRES_PASSWORD=galaksio_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - galaksio-network
+
+volumes:
+  galaksio-data:
+    driver: local
+  redis-data:
+    driver: local
+  postgres-data:
+    driver: local
+
+networks:
+  galaksio-network:
+    driver: bridge
