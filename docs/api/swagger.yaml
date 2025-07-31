@@ -1,0 +1,373 @@
+openapi: 3.0.0
+info:
+  title: Galaksio API
+  description: Modern Galaxy Workflow Interface API
+  version: 0.4.0
+  contact:
+    name: Galaksio Development Team
+    email: cmehdi213@example.com
+  license:
+    name: GNU General Public License v3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.en.html
+
+servers:
+  - url: http://localhost:8081
+    description: Development server
+  - url: https://your-galaksio-instance.com
+    description: Production server
+
+paths:
+  /health:
+    get:
+      summary: Health Check
+      description: Check the health status of the Galaksio server and Galaxy compatibility
+      tags:
+        - System
+      responses:
+        '200':
+          description: Health check successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  version:
+                    type: string
+                    example: 0.4.0
+                  galaxy_compatibility:
+                    type: string
+                    example: 25.0
+                  services:
+                    type: object
+                  system:
+                    type: object
+                  galaxy_connection:
+                    type: string
+                    example: connected
+
+  /api/test_connection:
+    post:
+      summary: Test Galaxy Connection
+      description: Test connection to a Galaxy instance
+      tags:
+        - Galaxy Connection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                galaxy_url:
+                  type: string
+                  example: https://usegalaxy.org
+                api_key:
+                  type: string
+                  example: your-api-key
+      responses:
+        '200':
+          description: Connection test result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  compatibility_report:
+                    type: object
+
+  /api/execute_workflow:
+    post:
+      summary: Execute Workflow
+      description: Execute a Galaxy workflow
+      tags:
+        - Workflows
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                workflow_id:
+                  type: string
+                  example: workflow_id_here
+                history_id:
+                  type: string
+                  example: history_id_here
+                parameters:
+                  type: object
+                inputs:
+                  type: object
+      responses:
+        '200':
+          description: Workflow execution started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  invocation_id:
+                    type: string
+                  message:
+                    type: string
+
+  /api/get_workflow_status:
+    post:
+      summary: Get Workflow Status
+      description: Get the status of a workflow execution
+      tags:
+        - Workflows
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                invocation_id:
+                  type: string
+                  example: invocation_id_here
+      responses:
+        '200':
+          description: Workflow status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  status:
+                    type: object
+
+  /api/upload_file:
+    post:
+      summary: Upload File
+      description: Upload a file to Galaxy
+      tags:
+        - File Upload
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                history_id:
+                  type: string
+      responses:
+        '200':
+          description: File upload result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  file_id:
+                    type: string
+                  upload_id:
+                    type: string
+
+  /api/detect_paired_reads:
+    post:
+      summary: Detect Paired Reads
+      description: Detect paired-end reads in a Galaxy history
+      tags:
+        - Paired Reads
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                history_id:
+                  type: string
+                  example: history_id_here
+      responses:
+        '200':
+          description: Paired reads detection result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  pairs:
+                    type: array
+                    items:
+                      type: object
+                  unpaired:
+                    type: array
+                    items:
+                      type: object
+                  statistics:
+                    type: object
+
+  /api/create_paired_collection:
+    post:
+      summary: Create Paired Collection
+      description: Create a paired dataset collection
+      tags:
+        - Paired Reads
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                history_id:
+                  type: string
+                forward_id:
+                  type: string
+                reverse_id:
+                  type: string
+                collection_name:
+                  type: string
+      responses:
+        '200':
+          description: Collection creation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  collection_id:
+                    type: string
+
+  /api/get_compatibility_report:
+    post:
+      summary: Get Compatibility Report
+      description: Get Galaxy API compatibility report
+      tags:
+        - Compatibility
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Compatibility report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  compatibility_report:
+                    type: object
+                    properties:
+                      galaxy_version:
+                        type: string
+                      api_version:
+                        type: string
+                      is_galaxy_25_plus:
+                        type: boolean
+                      compatibility_issues:
+                        type: array
+                        items:
+                          type: string
+                      recommendations:
+                        type: array
+                        items:
+                          type: string
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: Error message
+
+    WorkflowStatus:
+      type: object
+      properties:
+        invocation_id:
+          type: string
+        workflow_id:
+          type: string
+        history_id:
+          type: string
+        status:
+          type: string
+        progress:
+          type: number
+        steps_completed:
+          type: integer
+        total_steps:
+          type: integer
+        start_time:
+          type: string
+          format: date-time
+        end_time:
+          type: string
+          format: date-time
+
+    PairedReadMatch:
+      type: object
+      properties:
+        forward_id:
+          type: string
+        reverse_id:
+          type: string
+        forward_name:
+          type: string
+        reverse_name:
+          type: string
+        confidence_score:
+          type: number
+        platform:
+          type: string
+        pattern_type:
+          type: string
+
+tags:
+  - name: System
+    description: System endpoints
+  - name: Galaxy Connection
+    description: Galaxy instance connection management
+  - name: Workflows
+    description: Workflow management
+  - name: File Upload
+    description: File upload operations
+  - name: Paired Reads
+    description: Paired-end read management
+  - name: Compatibility
+    description: Galaxy compatibility checking
