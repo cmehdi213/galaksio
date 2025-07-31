@@ -41,6 +41,16 @@
 - **Background Cleanup**: Automatic cleanup of old workflows and uploads
 - **Health Monitoring**: Built-in health checks and system monitoring
 
+### 🧬 **NEW: Paired Reads Management**
+- **Automatic Paired-End Detection**: Intelligent detection of paired-end sequencing reads
+- **Multi-Platform Support**: Supports Illumina, PacBio, Oxford Nanopore, and other sequencing platforms
+- **Confidence Scoring**: Advanced algorithms to rate pairing confidence and avoid false positives
+- **One-Click Auto-Pairing**: Automatically detect and pair all reads in a Galaxy history
+- **Galaxy Collection Integration**: Seamlessly create Galaxy dataset collections from paired reads
+- **Pattern Recognition**: Supports multiple naming conventions (R1/R2, _1/_2, forward/reverse, etc.)
+- **Visual Interface**: Intuitive web interface for reviewing and managing paired reads
+- **Batch Processing**: Process entire histories with comprehensive summary statistics
+
 ## 📸 Screenshots
 
 ### Desktop Interface
@@ -54,6 +64,10 @@
 ### Installation Wizard
 ![Installation Wizard](https://raw.githubusercontent.com/cmehdi213/galaksio/master/docs/screenshots/wizard.png)
 *Step-by-step installation wizard with progress indicators*
+
+### **NEW: Paired Reads Manager**
+![Paired Reads Manager](https://raw.githubusercontent.com/cmehdi213/galaksio/master/docs/screenshots/paired-reads.png)
+*Automatic paired-end read detection and management interface*
 
 ## 🚀 Quick Start
 
