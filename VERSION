@@ -1,35 +1,83 @@
-Galaksio v0.3.1 September 2017
-
+Galaksio v0.4.0 June 2025
 ## Version Log
 
-** VERSION 0.3.1 September 2017 **
-  - Visual improvements.
+**VERSION 0.4.0 June 2025**
+- **Major Web Design Overhaul**: Complete responsive design with modern UI/UX
+- **Galaxy 25.0 Compatibility**: Full support for Galaxy Project version 25.0
+- **Python 3.9+ Support**: Updated to modern Python versions (dropped Python 3.8 support)
+- **BioBlend 1.6.0 Integration**: Updated to latest BioBlend for enhanced API compatibility
+- **Mobile-First Design**: Touch-friendly interface with bottom navigation for mobile devices
+- **Enhanced Accessibility**: Full WCAG 2.1 compliance with keyboard navigation and screen reader support
+- **Modern Frontend Stack**: 
+  - Updated to Bootstrap 5.3.x
+  - Updated to jQuery 3.7.x
+  - Updated to AngularJS 1.8.x
+  - Added Font Awesome 6.x for icons
+- **Progressive Web App**: Added PWA capabilities with service worker and manifest
+- **Dark Mode Support**: Automatic dark mode based on system preferences
+- **Enhanced Security**: Modern security practices, CORS support, and secure session management
+- **Performance Optimizations**: 
+  - Lazy loading for images and components
+  - Optimized CSS and JavaScript delivery
+  - Improved caching strategies
+- **User Experience Improvements**:
+  - Modern card-based layouts
+  - Smooth animations and transitions
+  - Toast notifications instead of alerts
+  - Loading states and empty states
+  - Real-time progress indicators
+  - Advanced search and filtering
+  - Batch operations support
+- **New Features**:
+  - Interactive dashboard with real-time statistics
+  - System status monitoring
+  - Advanced workflow management with favorites and tags
+  - Enhanced file upload with drag-and-drop
+  - Step-by-step installation wizard
+  - Modern authentication interface
+- **Docker Enhancement**: Updated Dockerfile with multi-stage builds and security improvements
+- **Documentation**: Completely updated documentation with modern examples and guides
+- **Bug Fixes**: Resolved numerous UI/UX issues and improved error handling
+- **Deprecated Support**: Dropped Internet Explorer and legacy browser support
 
-** VERSION 0.3 September 2017 **
-  - Adding some error control logic and forcing the reload of the page after sign-out (will cancel automatically all the
-    pending requests) to avoid error messages after signing out (Issue #2).
-  - Now the panel showing the current invocation state shows also the state for each step in the workflow. Besides
-    the results for the workflow execution are always shown even if the workflow failed.
-    Additionally, the user can get more details for each step in the workflow and see the used parameters and other useful
-    information (Issue #13 and #28).
-  - Added a more developed method for form validation. Now erroneous fields are indicated at the top of the form and at
-    the right of each invalid input with a red exclamation symbol. Besides, the application will autofocus the first
-    invalid field (Issue #10 and #14).
-  - Added support for "section" data types (Issue #11)
-  - Upgraded the version of "AngularJS dialogs" library to support the Report button handler (Issue #12).
-  - Added settings to configure a SMTP server in Galaksio and send the error report via email to the developers account.
-    Alternatively, if not SMTP settings are provided, the report is forwarded to a main Galaksio server which will send
-    the report by email (Issue #12).
-  - Fixed some visual issues (Issue #17).
-  - Display step name (if any) in data and data collection inputs (Issue #16).
-  - Added +/- zoom button in workflow diagram, now mouse wheel is used only for scrolling (Issue #18).
-  - Added affix support to history list, now the left panel scrolls down following the window (Issue #20).
-  - Replaced yes/no checkboxes by 2 state button (Issue #22).
-  - Replaced radio buttons by a drop-down menu (Issue #23).
-  - Replaced multi-select fields by list of checkboxes (Issue #24).
-  - Fixed to aggressive warning during input data (Issue #25)
-  - Fixed issues with workflow execution state (erroneous "Finished" state after sending) (Issue #26 and #27)
-  - Forced to recreate the forms when going back to step 2 during Workflow execution (Issue #31 and #29)
-  - Added a "Read more" button in workflow description (workflow card) when description is too long (Issue #30).
-  - Added tools for filtering the list of invocations. Besides, we have improved the performance when retrieving the
-    list of invocations and their state (reduce the number of requests, avoid repeating requests,...).
+**VERSION 0.3.1 September 2017**
+- Visual improvements.
+- Adding some error control logic and forcing the reload of the page after sign-out (will cancel automatically all the pending requests) to avoid error messages after signing out (Issue #2).
+- Now the panel showing the current invocation state shows also the state for each step in the workflow. Besides the results for the workflow execution are always shown even if the workflow failed.
+Additionally, the user can get more details for each step in the workflow and see the used parameters and other useful information (Issue #13 and #28).
+- Added a more developed method for form validation. Now erroneous fields are indicated at the top of the form and at the right of each invalid input with a red exclamation symbol. Besides, the application will autofocus the first invalid field (Issue #10 and #14).
+- Added support for "section" data types (Issue #11)
+- Upgraded the version of "AngularJS dialogs" library to support the Report button handler (Issue #12).
+- Added settings to configure a SMTP server in Galaksio and send the error report via email to the developers account.
+Alternatively, if not SMTP settings are provided, the report is forwarded to a main Galaksio server which will send the report by email (Issue #12).
+- Fixed some visual issues (Issue #17).
+- Display step name (if any) in data and data collection inputs (Issue #16).
+- Added +/- zoom button in workflow diagram, now mouse wheel is used only for scrolling (Issue #18).
+- Added affix support to history list, now the left panel scrolls down following the window (Issue #20).
+- Replaced yes/no checkboxes by 2 state button (Issue #22).
+- Replaced radio buttons by a drop-down menu (Issue #23).
+- Replaced multi-select fields by list of checkboxes (Issue #24).
+- Fixed to aggressive warning during input data (Issue #25)
+- Fixed issues with workflow execution state (erroneous "Finished" state after sending) (Issue #26 and #27)
+
+**VERSION 0.3 September 2017**
+- Initial stable release with core functionality
+- Basic workflow management interface
+- Galaxy integration capabilities
+- User authentication and session management
+- History and dataset management
+- Basic responsive design
+
+**VERSION 0.2.0 May 2017**
+- Beta release with enhanced features
+- Improved user interface
+- Extended Galaxy API integration
+- Enhanced error handling
+- Performance optimizations
+
+**VERSION 0.1.0 March 2017**
+- Initial alpha release
+- Basic workflow execution
+- Simple user interface
+- Galaxy server connection
+- File upload capabilities
