@@ -1,192 +1,215 @@
 /**
  * Compatibility Report Controller for Galaksio
- * Displays Galaxy API compatibility information and recommendations.
+ * Handles Galaxy API compatibility reporting and monitoring.
  */
 
 angular.module('galaksio').controller('CompatibilityReportController', [
-    '$scope', '$timeout', 'GalaxyService', 'NotificationService',
-    function($scope, $timeout, GalaxyService, NotificationService) {
+    '$scope', '$http', '$timeout', '$interval', 'ToastService', 'LoadingService',
+    function($scope, $http, $timeout, $interval, ToastService, LoadingService) {
         
-        $scope.compatibilityReport = null;
-        $scope.isLoading = false;
-        $scope.showDetails = false;
+        $scope.compatibilityReport = {};
+        $scope.loading = false;
+        $scope.autoRefresh = false;
+        $scope.refreshInterval = null;
+        $scope.lastRefreshTime = null;
+        $scope.connectionStatus = 'unknown';
         
-        // Initialize
+        // Initialize controller
         $scope.init = function() {
             $scope.loadCompatibilityReport();
+            $scope.startAutoRefresh();
         };
         
         // Load compatibility report
         $scope.loadCompatibilityReport = function() {
-            $scope.isLoading = true;
-            $scope.compatibilityReport = null;
+            $scope.loading = true;
+            LoadingService.show('Checking Galaxy compatibility...');
             
-            GalaxyService.getCompatibilityReport().then(function(response) {
-                $scope.isLoading = false;
-                
-                if (response.success) {
-                    $scope.compatibilityReport = response.compatibility_report;
-                    $scope.analyzeCompatibility();
-                } else {
-                    NotificationService.error('Failed to load compatibility report: ' + response.error);
-                }
-            }).catch(function(error) {
-                $scope.isLoading = false;
-                NotificationService.error('Error loading compatibility report: ' + error.message);
-            });
+            $http.post('/api/get_compatibility_report')
+                .then(function(response) {
+                    if (response.data.success) {
+                        $scope.compatibilityReport = response.data.compatibility_report;
+                        $scope.connectionStatus = 'connected';
+                        $scope.lastRefreshTime = new Date();
+                        
+                        ToastService.success('Compatibility report updated');
+                    } else {
+                        $scope.connectionStatus = 'error';
+                        ToastService.error('Failed to load compatibility report: ' + response.data.error);
+                    }
+                })
+                .catch(function(error) {
+                    $scope.connectionStatus = 'disconnected';
+                    ToastService.error('Error connecting to Galaxy: ' + error.message);
+                })
+                .finally(function() {
+                    $scope.loading = false;
+                    LoadingService.hide();
+                });
         };
         
-        // Analyze compatibility and provide recommendations
-        $scope.analyzeCompatibility = function() {
-            if (!$scope.compatibilityReport) return;
+        // Start auto refresh
+        $scope.startAutoRefresh = function() {
+            if ($scope.refreshInterval) {
+                $interval.cancel($scope.refreshInterval);
+            }
             
-            const report = $scope.compatibilityReport;
-            
-            // Determine overall status
-            if (report.is_compatible) {
-                $scope.overallStatus = {
-                    level: 'success',
-                    icon: 'fas fa-check-circle',
-                    message: 'Fully Compatible',
-                    description: 'Your Galaxy instance is fully compatible with Galaksio 2'
-                };
-            } else if (report.is_galaxy_25_plus) {
-                $scope.overallStatus = {
-                    level: 'warning',
-                    icon: 'fas fa-exclamation-triangle',
-                    message: 'Partially Compatible',
-                    description: 'Galaxy 25.0+ detected with some compatibility issues'
-                };
+            $scope.refreshInterval = $interval(function() {
+                if ($scope.autoRefresh) {
+                    $scope.loadCompatibilityReport();
+                }
+            }, 30000); // Refresh every 30 seconds
+        };
+        
+        // Toggle auto refresh
+        $scope.toggleAutoRefresh = function() {
+            $scope.autoRefresh = !$scope.autoRefresh;
+            if ($scope.autoRefresh) {
+                ToastService.info('Auto refresh enabled');
             } else {
-                $scope.overallStatus = {
-                    level: 'danger',
-                    icon: 'fas fa-times-circle',
-                    message: 'Compatibility Issues',
-                    description: 'Compatibility issues detected that may affect functionality'
-                };
+                ToastService.info('Auto refresh disabled');
             }
-            
-            // Analyze specific issues
-            $scope.analyzeIssues();
         };
         
-        // Analyze specific compatibility issues
-        $scope.analyzeIssues = function() {
-            if (!$scope.compatibilityReport || !$scope.compatibilityReport.compatibility_issues) {
-                $scope.issueCategories = [];
-                return;
+        // Get status class
+        $scope.getStatusClass = function(isCompatible) {
+            return isCompatible ? 'text-success' : 'text-danger';
+        };
+        
+        // Get status icon
+        $scope.getStatusIcon = function(isCompatible) {
+            return isCompatible ? 'fas fa-check-circle' : 'fas fa-times-circle';
+        };
+        
+        // Get connection status class
+        $scope.getConnectionStatusClass = function() {
+            switch ($scope.connectionStatus) {
+                case 'connected':
+                    return 'text-success';
+                case 'disconnected':
+                    return 'text-danger';
+                case 'error':
+                    return 'text-warning';
+                default:
+                    return 'text-muted';
             }
+        };
+        
+        // Get connection status icon
+        $scope.getConnectionStatusIcon = function() {
+            switch ($scope.connectionStatus) {
+                case 'connected':
+                    return 'fas fa-wifi';
+                case 'disconnected':
+                    return 'fas fa-wifi-slash';
+                case 'error':
+                    return 'fas fa-exclamation-triangle';
+                default:
+                    return 'fas fa-question-circle';
+            }
+        };
+        
+        // Get connection status text
+        $scope.getConnectionStatusText = function() {
+            switch ($scope.connectionStatus) {
+                case 'connected':
+                    return 'Connected';
+                case 'disconnected':
+                    return 'Disconnected';
+                case 'error':
+                    return 'Error';
+                default:
+                    return 'Unknown';
+            }
+        };
+        
+        // Test connection
+        $scope.testConnection = function() {
+            $scope.loading = true;
+            LoadingService.show('Testing Galaxy connection...');
             
-            const issues = $scope.compatibilityReport.compatibility_issues;
-            $scope.issueCategories = {
-                critical: [],
-                warning: [],
-                info: []
-            };
-            
-            issues.forEach(function(issue) {
-                if (issue.includes('failed') || issue.includes('error')) {
-                    $scope.issueCategories.critical.push({
-                        type: 'critical',
-                        message: issue,
-                        recommendation: 'This issue may prevent some features from working properly'
-                    });
-                } else if (issue.includes('warning') || issue.includes('deprecated')) {
-                    $scope.issueCategories.warning.push({
-                        type: 'warning',
-                        message: issue,
-                        recommendation: 'This may cause issues in future versions'
-                    });
+            $http.post('/api/test_connection', {
+                galaxy_url: $scope.compatibilityReport.galaxy_version ? 
+                    'https://usegalaxy.org' : 'https://usegalaxy.org'
+            })
+            .then(function(response) {
+                if (response.data.success) {
+                    ToastService.success('Connection test successful');
+                    $scope.loadCompatibilityReport();
                 } else {
-                    $scope.issueCategories.info.push({
-                        type: 'info',
-                        message: issue,
-                        recommendation: 'Informational message for reference'
-                    });
+                    ToastService.error('Connection test failed: ' + response.data.error);
                 }
+            })
+            .catch(function(error) {
+                ToastService.error('Connection test error: ' + error.message);
+            })
+            .finally(function() {
+                $scope.loading = false;
+                LoadingService.hide();
             });
         };
         
-        // Get status class for styling
-        $scope.getStatusClass = function(level) {
-            const classes = {
-                'success': 'text-success',
-                'warning': 'text-warning',
-                'danger': 'text-danger',
-                'info': 'text-info'
+        // Export compatibility report
+        $scope.exportReport = function() {
+            const reportData = {
+                compatibility_report: $scope.compatibilityReport,
+                export_time: new Date().toISOString(),
+                connection_status: $scope.connectionStatus,
+                last_refresh: $scope.lastRefreshTime
             };
-            return classes[level] || 'text-secondary';
+            
+            const blob = new Blob([JSON.stringify(reportData, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `galaxy-compatibility-report-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            ToastService.success('Compatibility report exported');
         };
         
-        // Get badge class for issues
-        $scope.getIssueBadgeClass = function(type) {
-            const classes = {
-                'critical': 'bg-danger',
-                'warning': 'bg-warning',
-                'info': 'bg-info'
-            };
-            return classes[type] || 'bg-secondary';
+        // Format timestamp
+        $scope.formatTimestamp = function(timestamp) {
+            if (!timestamp) return 'Never';
+            return new Date(timestamp).toLocaleString();
         };
         
-        // Format version information
-        $scope.formatVersionInfo = function() {
-            if (!$scope.compatibilityReport) return '';
-            
-            const report = $scope.compatibilityReport;
-            let info = `Galaxy ${report.galaxy_version || 'unknown'}`;
-            
-            if (report.api_version) {
-                info += ` (API ${report.api_version})`;
-            }
-            
-            if (report.is_galaxy_25_plus) {
-                info += ' - 25.0+ Compatible';
-            }
-            
-            return info;
+        // Get version badge class
+        $scope.getVersionBadgeClass = function(version) {
+            if (!version) return 'bg-secondary';
+            if (version.startsWith('25.')) return 'bg-success';
+            if (version.startsWith('24.')) return 'bg-warning';
+            return 'bg-danger';
         };
         
-        // Refresh compatibility report
-        $scope.refreshReport = function() {
+        // Check if feature is supported
+        $scope.isFeatureSupported = function(feature) {
+            return $scope.compatibilityReport.supported_features && 
+                   $scope.compatibilityReport.supported_features.includes(feature);
+        };
+        
+        // Get feature status icon
+        $scope.getFeatureStatusIcon = function(feature) {
+            return $scope.isFeatureSupported(feature) ? 
+                'fas fa-check text-success' : 'fas fa-times text-danger';
+        };
+        
+        // Refresh manually
+        $scope.refresh = function() {
             $scope.loadCompatibilityReport();
         };
         
-        // Toggle detailed view
-        $scope.toggleDetails = function() {
-            $scope.showDetails = !$scope.showDetails;
-        };
-        
-        // Copy report to clipboard
-        $scope.copyReport = function() {
-            if (!$scope.compatibilityReport) return;
-            
-            const reportText = JSON.stringify($scope.compatibilityReport, null, 2);
-            
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(reportText).then(function() {
-                    NotificationService.success('Compatibility report copied to clipboard');
-                }).catch(function() {
-                    NotificationService.error('Failed to copy report to clipboard');
-                });
-            } else {
-                // Fallback for older browsers
-                const textArea = document.createElement('textarea');
-                textArea.value = reportText;
-                document.body.appendChild(textArea);
-                textArea.select();
-                
-                try {
-                    document.execCommand('copy');
-                    NotificationService.success('Compatibility report copied to clipboard');
-                } catch (err) {
-                    NotificationService.error('Failed to copy report to clipboard');
-                }
-                
-                document.body.removeChild(textArea);
+        // Cleanup on destroy
+        $scope.$on('$destroy', function() {
+            if ($scope.refreshInterval) {
+                $interval.cancel($scope.refreshInterval);
             }
-        };
+        });
         
-        // Initialize controller
+        // Initialize
         $scope.init();
     }
 ]);
