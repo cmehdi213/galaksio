@@ -14,6 +14,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="css/main.css" rel="stylesheet">
+    <link href="css/components.css" rel="stylesheet">
+    <link href="css/responsive.css" rel="stylesheet">
+    <link href="css/animations.css" rel="stylesheet">
     
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -68,7 +71,10 @@
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-server"></i></span>
                                     <input type="text" class="form-control" id="serverHost" 
-                                           placeholder="localhost" value="localhost">
+                                           placeholder="localhost" value="localhost" required>
+                                </div>
+                                <div class="invalid-feedback">
+                                    Please provide a valid server host.
                                 </div>
                             </div>
                             
@@ -77,7 +83,10 @@
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-port"></i></span>
                                     <input type="number" class="form-control" id="serverPort" 
-                                           placeholder="8081" value="8081">
+                                           placeholder="8081" value="8081" required>
+                                </div>
+                                <div class="invalid-feedback">
+                                    Please provide a valid port number.
                                 </div>
                             </div>
                             
@@ -86,9 +95,14 @@
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-upload"></i></span>
                                     <input type="number" class="form-control" id="maxUpload" 
-                                           placeholder="500" value="500">
+                                           placeholder="500" value="500" required>
                                 </div>
-                                <div class="form-text">Maximum file upload size in megabytes</div>
+                                <div class="form-text">
+                                    Maximum file upload size in megabytes
+                                </div>
+                                <div class="invalid-feedback">
+                                    Please provide a valid upload size.
+                                </div>
                             </div>
                             
                             <div class="d-flex justify-content-between">
@@ -112,7 +126,10 @@
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-rocket"></i></span>
                                     <input type="url" class="form-control" id="galaxyServer" 
-                                           placeholder="https://usegalaxy.eu" value="https://usegalaxy.eu">
+                                           placeholder="https://usegalaxy.eu" value="https://usegalaxy.eu" required>
+                                </div>
+                                <div class="invalid-feedback">
+                                    Please provide a valid Galaxy server URL.
                                 </div>
                             </div>
                             
@@ -123,7 +140,9 @@
                                     <input type="password" class="form-control" id="galaxyApiKey" 
                                            placeholder="Enter your Galaxy API key">
                                 </div>
-                                <div class="form-text">Leave empty if you want to configure this later</div>
+                                <div class="form-text">
+                                    Leave empty if you want to configure this later
+                                </div>
                             </div>
                             
                             <div class="mb-3">
@@ -133,7 +152,9 @@
                                         Enable safe upload mode
                                     </label>
                                 </div>
-                                <div class="form-text">Validates files before uploading to Galaxy</div>
+                                <div class="form-text">
+                                    Validates files before uploading to Galaxy
+                                </div>
                             </div>
                             
                             <div class="d-flex justify-content-between">
@@ -157,7 +178,10 @@
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-envelope"></i></span>
                                     <input type="email" class="form-control" id="adminEmail" 
-                                           placeholder="admin@example.com">
+                                           placeholder="admin@example.com" required>
+                                </div>
+                                <div class="invalid-feedback">
+                                    Please provide a valid email address.
                                 </div>
                             </div>
                             
@@ -166,7 +190,10 @@
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-lock"></i></span>
                                     <input type="password" class="form-control" id="adminPassword" 
-                                           placeholder="Enter password">
+                                           placeholder="Enter password" required>
+                                </div>
+                                <div class="invalid-feedback">
+                                    Password must be at least 6 characters long.
                                 </div>
                             </div>
                             
@@ -175,7 +202,10 @@
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="fas fa-lock"></i></span>
                                     <input type="password" class="form-control" id="adminPasswordConfirm" 
-                                           placeholder="Confirm password">
+                                           placeholder="Confirm password" required>
+                                </div>
+                                <div class="invalid-feedback">
+                                    Passwords do not match.
                                 </div>
                             </div>
                             
@@ -192,18 +222,20 @@
                         <!-- Step 4: Complete -->
                         <div class="form-step">
                             <div class="text-center">
-                                <div class="success-icon mb-3">
+                                <div class="success-icon mb-3 animate-fade-in">
                                     <i class="fas fa-check-circle"></i>
                                 </div>
-                                <h3 class="step-title">Installation Complete!</h3>
-                                <p class="text-muted">Galaksio has been successfully configured and is ready to use.</p>
+                                <h3 class="step-title animate-fade-in-up animate-delay-1">Installation Complete!</h3>
+                                <p class="text-muted animate-fade-in-up animate-delay-2">
+                                    Galaksio has been successfully configured and is ready to use.
+                                </p>
                                 
-                                <div class="alert alert-success">
+                                <div class="alert alert-success animate-fade-in-up animate-delay-3">
                                     <i class="fas fa-info-circle me-2"></i>
                                     You can now access Galaksio at: <strong>http://localhost:8081</strong>
                                 </div>
                                 
-                                <button type="button" class="btn btn-success btn-lg" onclick="finishSetup()">
+                                <button type="button" class="btn btn-success btn-lg animate-fade-in-up animate-delay-4" onclick="finishSetup()">
                                     <i class="fas fa-rocket me-1"></i> Launch Galaksio
                                 </button>
                             </div>
@@ -215,6 +247,7 @@
     </div>
     
     <!-- Modern JavaScript -->
+    <script src="lib/jquery/dist/jquery.min.js"></script>
     <script src="lib/bootstrap/dist/js/bootstrap.min.js"></script>
     <script>
         let currentStep = 0;
@@ -222,10 +255,19 @@
         const stepIndicators = document.querySelectorAll('.progress-steps .step');
         
         function showStep(stepIndex) {
+            // Hide all steps
             steps.forEach((step, index) => {
-                step.classList.toggle('active', index === stepIndex);
+                step.classList.remove('active');
+                if (index < stepIndex) {
+                    step.style.display = 'none';
+                } else if (index > stepIndex) {
+                    step.style.display = 'none';
+                } else {
+                    step.style.display = 'block';
+                }
             });
             
+            // Update step indicators
             stepIndicators.forEach((indicator, index) => {
                 indicator.classList.toggle('active', index <= stepIndex);
             });
@@ -233,6 +275,9 @@
             // Update progress bar
             const progressFill = document.querySelector('.progress-fill');
             progressFill.style.width = `${((stepIndex + 1) / steps.length) * 100}%`;
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         
         function nextStep() {
@@ -250,28 +295,77 @@
         function validateCurrentStep() {
             const currentStepElement = steps[currentStep];
             const inputs = currentStepElement.querySelectorAll('input[required]');
+            let isValid = true;
             
-            for (let input of inputs) {
+            // Validate all required inputs
+            inputs.forEach(input => {
                 if (!input.value.trim()) {
                     input.classList.add('is-invalid');
-                    input.focus();
-                    return false;
+                    isValid = false;
+                } else {
+                    input.classList.remove('is-invalid');
+                    input.classList.add('is-valid');
                 }
-                input.classList.remove('is-invalid');
-            }
+            });
             
             // Special validation for password confirmation
             if (currentStep === 2) {
-                const password = document.getElementById('adminPassword').value;
-                const confirmPassword = document.getElementById('adminPasswordConfirm').value;
+                const password = document.getElementById('adminPassword');
+                const confirmPassword = document.getElementById('adminPasswordConfirm');
                 
-                if (password !== confirmPassword) {
-                    document.getElementById('adminPasswordConfirm').classList.add('is-invalid');
-                    return false;
+                if (password.value.length < 6) {
+                    password.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    password.classList.remove('is-invalid');
+                    password.classList.add('is-valid');
+                }
+                
+                if (password.value !== confirmPassword.value) {
+                    confirmPassword.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    confirmPassword.classList.remove('is-invalid');
+                    confirmPassword.classList.add('is-valid');
                 }
             }
             
-            return true;
+            // Email validation
+            if (currentStep === 2) {
+                const email = document.getElementById('adminEmail');
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                
+                if (!emailRegex.test(email.value)) {
+                    email.classList.add('is-invalid');
+                    isValid = false;
+                } else {
+                    email.classList.remove('is-invalid');
+                    email.classList.add('is-valid');
+                }
+            }
+            
+            // URL validation for Galaxy server
+            if (currentStep === 1) {
+                const galaxyServer = document.getElementById('galaxyServer');
+                try {
+                    new URL(galaxyServer.value);
+                    galaxyServer.classList.remove('is-invalid');
+                    galaxyServer.classList.add('is-valid');
+                } catch {
+                    galaxyServer.classList.add('is-invalid');
+                    isValid = false;
+                }
+            }
+            
+            // Focus first invalid input
+            if (!isValid) {
+                const firstInvalid = currentStepElement.querySelector('.is-invalid');
+                if (firstInvalid) {
+                    firstInvalid.focus();
+                }
+            }
+            
+            return isValid;
         }
         
         function finishSetup() {
@@ -287,6 +381,12 @@
                 adminPassword: document.getElementById('adminPassword').value
             };
             
+            // Show loading state
+            const submitButton = document.querySelector('.btn-success');
+            const originalText = submitButton.innerHTML;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Installing...';
+            submitButton.disabled = true;
+            
             // Send data to server
             fetch('/api/setup', {
                 method: 'POST',
@@ -298,19 +398,49 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    window.location.href = '/';
+                    // Show success animation
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
                 } else {
+                    // Show error
+                    submitButton.innerHTML = originalText;
+                    submitButton.disabled = false;
                     alert('Setup failed: ' + data.message);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
                 alert('Setup failed. Please try again.');
             });
         }
         
+        // Add input event listeners for real-time validation
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    if (this.classList.contains('is-invalid') || this.classList.contains('is-valid')) {
+                        // Re-validate on input
+                        validateCurrentStep();
+                    }
+                });
+            });
+        });
+        
         // Initialize first step
         showStep(0);
+        
+        // Add keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                nextStep();
+            } else if (e.key === 'Enter' && e.shiftKey && currentStep > 0) {
+                previousStep();
+            }
+        });
     </script>
 </body>
 </html>
