@@ -4,5 +4,8 @@ requests==2.31.0
 fpdf==1.7.2
 fpdf2==2.7.6
 python-dateutil==2.8.2
+
+# New dependencies for enhanced functionality
 flask-cors==4.0.0
 flask-talisman==1.0.0
+werkzeug==3.0.0
