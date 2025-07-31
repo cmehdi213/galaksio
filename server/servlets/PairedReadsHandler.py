@@ -48,16 +48,16 @@ class PairedReadsHandler:
     def detect_paired_reads(self, history_id: str) -> Dict[str, List[Dict]]:
         """
         Detect paired-end reads in a Galaxy history.
-        
-        Args:
-            history_id: Galaxy history ID
-            
-        Returns:
-            Dict with paired reads information
         """
         try:
-            # Get all datasets in the history
-            datasets = self.gi.histories.show_history(history_id, contents=True)
+            # Import here to avoid circular imports
+            from .GalaxyAPIVerifier import get_api_verifier
+            
+            # Get API verifier for compatibility checks
+            verifier = get_api_verifier(self.gi)
+            
+            # Get history contents using safe method
+            datasets = verifier.get_safe_history_contents(history_id, contents=True)
             
             # Filter for sequencing files
             sequencing_files = []
@@ -74,7 +74,8 @@ class PairedReadsHandler:
                 'paired_groups': paired_groups,
                 'unpaired_files': self._get_unpaired_files(sequencing_files, paired_groups),
                 'total_pairs': len(paired_groups),
-                'total_unpaired': len(sequencing_files) - sum(len(group['files']) for group in paired_groups)
+                'total_unpaired': len(sequencing_files) - sum(len(group['files']) for group in paired_groups),
+                'compatibility_report': verifier.get_compatibility_report()
             }
             
             logger.info(f"Detected {result['total_pairs']} paired groups and {result['total_unpaired']} unpaired files")
@@ -224,13 +225,6 @@ class PairedReadsHandler:
     def create_paired_collection(self, history_id: str, paired_group: Dict) -> Dict:
         """
         Create a paired collection in Galaxy from detected paired reads.
-        
-        Args:
-            history_id: Galaxy history ID
-            paired_group: Paired group information
-            
-        Returns:
-            Dict with collection creation result
         """
         try:
             if len(paired_group['files']) != 2:
@@ -242,7 +236,13 @@ class PairedReadsHandler:
             file1, file2 = paired_group['files']
             collection_name = paired_group.get('suggested_name', 'paired_collection')
             
-            # Create dataset collection
+            # Import here to avoid circular imports
+            from .GalaxyAPIVerifier import get_api_verifier
+            
+            # Get API verifier for compatibility checks
+            verifier = get_api_verifier(self.gi)
+            
+            # Create dataset collection description
             collection_description = {
                 'collection_type': 'paired',
                 'name': collection_name,
@@ -260,15 +260,12 @@ class PairedReadsHandler:
                 ]
             }
             
-            # Create the collection
-            collection = self.gi.histories.create_dataset_collection(
-                history_id=history_id,
-                collection_description=collection_description
-            )
+            # Create the collection using safe method
+            collection = verifier.create_safe_collection(history_id, collection_description)
             
             return {
                 'success': True,
-                'collection_id': collection['id'],
+                'collection_id': collection.get('id'),
                 'collection_name': collection_name,
                 'message': f'Created paired collection: {collection_name}'
             }
@@ -283,13 +280,6 @@ class PairedReadsHandler:
     def auto_pair_all_reads(self, history_id: str, create_collections: bool = True) -> Dict:
         """
         Automatically detect and pair all reads in a history.
-        
-        Args:
-            history_id: Galaxy history ID
-            create_collections: Whether to create Galaxy collections
-            
-        Returns:
-            Dict with auto-pairing results
         """
         try:
             # Detect paired reads
@@ -319,7 +309,8 @@ class PairedReadsHandler:
                     'high_confidence_pairs': len([g for g in paired_groups if g['confidence'] >= 0.7]),
                     'collections_created': len(created_collections),
                     'unpaired_count': len(detection_result['unpaired_files'])
-                }
+                },
+                'compatibility_report': detection_result.get('compatibility_report', {})
             }
             
         except Exception as e:
@@ -328,6 +319,22 @@ class PairedReadsHandler:
                 'success': False,
                 'error': str(e)
             }
+
+    def get_supported_patterns(self) -> Dict:
+        """Get supported paired read patterns and file extensions."""
+        patterns = []
+        for pattern, replacement in self.PAIRED_READ_PATTERNS:
+            patterns.append({
+                'pattern': pattern,
+                'replacement': replacement,
+                'description': f"Files matching '{pattern}' will be paired with '{replacement}'"
+            })
+        
+        return {
+            'success': True,
+            'patterns': patterns,
+            'supported_extensions': list(self.SUPPORTED_EXTENSIONS)
+        }
 
 def get_paired_reads_handler(galaxy_instance: GalaxyInstance) -> PairedReadsHandler:
     """Get a paired reads handler instance."""
