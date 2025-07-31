@@ -1,41 +1,71 @@
-# Galaksio - An easy-to-use GUI for running Galaxy workflows
+# Galaksio - Modern Galaxy Workflow Interface
 
 ![Galaksio Logo](docs/galaksio_logo.png)
 
-Galaksio is a web application that simplifies the usage of the Galaxy bioinformatics platform. It provides a simple but complete UI for using Galaxy for biologists that require bioinformatics workflows to complete their research.
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Galaxy 25.0](https://img.shields.io/badge/Galaxy-25.0-brightgreen.svg)](https://docs.galaxyproject.org/en/latest/)
+[![Responsive Design](https://img.shields.io/badge/Responsive-Design-green.svg)](https://github.com/SGBC/galaksio)
 
-## 🚀 What's New in Version 0.4.0
+> A modern, responsive web interface for running Galaxy workflows with enhanced user experience and accessibility.
 
-- **Galaxy 25.0 Compatibility**: Full support for Galaxy Project version 25.0
-- **Python 3.9+ Support**: Updated to use Python 3.9 or later
-- **BioBlend 1.6.0**: Updated to the latest BioBlend version for better API compatibility
-- **Enhanced Error Handling**: Improved error handling and logging
-- **Security Improvements**: Better security configurations and CORS support
+## 🌟 What's New in Version 0.4.0
 
-## Features
+### 🎨 Modern Web Design
+- **Fully Responsive Interface**: Works seamlessly on desktop, tablet, and mobile devices
+- **Mobile-First Design**: Touch-friendly interface with bottom navigation for mobile users
+- **Modern UI Components**: Card-based layouts, smooth animations, and intuitive navigation
+- **Enhanced Accessibility**: Full keyboard navigation, screen reader support, and ARIA labels
+- **Dark Mode Support**: Automatic dark mode based on system preferences
+- **Progressive Web App**: PWA capabilities for offline functionality and app-like experience
 
-- ✅ **Simple Interface**: Easy-to-use interface for biologists
-- ✅ **Workflow Management**: Run any Galaxy workflow with just a few clicks
-- ✅ **File Upload**: Upload files directly to Galaxy
-- ✅ **Result Download**: Download workflow results easily
-- ✅ **Batch Processing**: Run multiple workflows simultaneously
-- ✅ **Galaxy 25.0 Ready**: Compatible with the latest Galaxy version
+### 🚀 Performance & Compatibility
+- **Galaxy 25.0 Ready**: Full compatibility with the latest Galaxy Project version
+- **Python 3.9+ Support**: Updated to use modern Python versions
+- **BioBlend 1.6.0**: Latest BioBlend integration for enhanced API compatibility
+- **Optimized Loading**: Fast loading times with lazy loading and optimized assets
+- **Enhanced Security**: Modern security practices and CORS support
 
-## Quick Start
+### 💡 User Experience Improvements
+- **Interactive Dashboard**: Real-time statistics and system monitoring
+- **Advanced Search & Filtering**: Powerful search capabilities with tag-based filtering
+- **Toast Notifications**: Modern notification system instead of intrusive alerts
+- **Loading States**: Beautiful loading indicators and empty states
+- **Quick Actions**: Fast access to common workflow operations
+- **Workflow Cards**: Visual workflow representation with metadata and statistics
+
+## 📸 Screenshots
+
+### Desktop Interface
+![Desktop Interface](docs/screenshots/desktop-view.png)
+*Modern desktop interface with sidebar navigation and workflow cards*
+
+### Mobile Interface
+![Mobile Interface](docs/screenshots/mobile-view.png)
+*Responsive mobile design with bottom navigation and touch-friendly controls*
+
+### Installation Wizard
+![Installation Wizard](docs/screenshots/install-wizard.png)
+*Step-by-step installation wizard with progress indicators*
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Python 3.9 or later
-- pip (Python package manager)
-- Access to a Galaxy instance (v19.05 or later, tested with v25.0)
+- **Python**: 3.9 or later
+- **Node.js**: 16+ (for development)
+- **Docker**: 20+ (optional, for containerized deployment)
+- **Modern Browser**: Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
 
 ### Installation
 
-1. **Install dependencies**:
+#### Option 1: Standard Installation
+
+1. **Install system dependencies**:
 ```bash
 # For Ubuntu/Debian
 sudo apt-get update
-sudo apt-get install -y python3 python3-pip git
+sudo apt-get install -y python3 python3-pip git build-essential
 
 # For CentOS/RHEL
-sudo yum install -y python3 python3-pip git
+sudo yum install -y python3 python3-pip git gcc
