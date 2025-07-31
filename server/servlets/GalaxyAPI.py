@@ -36,6 +36,8 @@ from flask import request, jsonify, current_app
 from .AuthHandler import authenticate_galaxy, GalaxyAuthHandler
 from .WorkflowTracker import get_workflow_tracker, track_workflow_execution
 from .ErrorHandler import handle_galaxy_error, GalaksioError, AuthenticationError
+# Paired Ends
+from .PairedReadsHandler import get_paired_reads_handler
 
 logger = logging.getLogger(__name__)
 
@@ -290,3 +292,115 @@ def testConnection(request, settings):
     except Exception as e:
         logger.error(f"Error testing connection: {e}")
         return handle_galaxy_error(e, {'function': 'testConnection'})
+
+# Paired end automation
+def detectPairedReads(request, settings):
+    """
+    Detect paired-end reads in a Galaxy history.
+    """
+    try:
+        history_id = request.json.get("history_id")
+        
+        if not history_id:
+            return {
+                'success': False,
+                'error': 'History ID is required'
+            }
+        
+        # Get authenticated Galaxy instance
+        gi = get_galaxy_instance(settings)
+        
+        # Get paired reads handler
+        paired_handler = get_paired_reads_handler(gi)
+        
+        # Detect paired reads
+        result = paired_handler.detect_paired_reads(history_id)
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error detecting paired reads: {e}")
+        return handle_galaxy_error(e, {'function': 'detectPairedReads'})
+
+def createPairedCollection(request, settings):
+    """
+    Create a paired collection from detected paired reads.
+    """
+    try:
+        history_id = request.json.get("history_id")
+        paired_group = request.json.get("paired_group")
+        
+        if not history_id or not paired_group:
+            return {
+                'success': False,
+                'error': 'History ID and paired group are required'
+            }
+        
+        # Get authenticated Galaxy instance
+        gi = get_galaxy_instance(settings)
+        
+        # Get paired reads handler
+        paired_handler = get_paired_reads_handler(gi)
+        
+        # Create paired collection
+        result = paired_handler.create_paired_collection(history_id, paired_group)
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error creating paired collection: {e}")
+        return handle_galaxy_error(e, {'function': 'createPairedCollection'})
+
+def autoPairAllReads(request, settings):
+    """
+    Automatically detect and pair all reads in a history.
+    """
+    try:
+        history_id = request.json.get("history_id")
+        create_collections = request.json.get("create_collections", True)
+        
+        if not history_id:
+            return {
+                'success': False,
+                'error': 'History ID is required'
+            }
+        
+        # Get authenticated Galaxy instance
+        gi = get_galaxy_instance(settings)
+        
+        # Get paired reads handler
+        paired_handler = get_paired_reads_handler(gi)
+        
+        # Auto-pair all reads
+        result = paired_handler.auto_pair_all_reads(history_id, create_collections)
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error in auto-pairing all reads: {e}")
+        return handle_galaxy_error(e, {'function': 'autoPairAllReads'})
+
+def getPairedReadPatterns(request, settings):
+    """
+    Get supported paired read patterns.
+    """
+    try:
+        from .PairedReadsHandler import PairedReadsHandler
+        
+        patterns = []
+        for pattern, replacement in PairedReadsHandler.PAIRED_READ_PATTERNS:
+            patterns.append({
+                'pattern': pattern,
+                'replacement': replacement,
+                'description': f"Files matching '{pattern}' will be paired with '{replacement}'"
+            })
+        
+        return {
+            'success': True,
+            'patterns': patterns,
+            'supported_extensions': list(PairedReadsHandler.SUPPORTED_EXTENSIONS)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting paired read patterns: {e}")
+        return handle_galaxy_error(e, {'function': 'getPairedReadPatterns'})
