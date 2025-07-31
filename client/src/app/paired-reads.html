@@ -33,7 +33,7 @@
                     
                     <div class="row mt-3">
                         <div class="col-12">
-                            <button class="btn btn-success" ng-click="autoPairAllReads()" 
+                            <button class="btn btn-success me-2" ng-click="autoPairAllReads()" 
                                     ng-disabled="!selectedHistory || autoPairing">
                                 <i class="fas fa-magic me-2"></i>
                                 <span ng-if="!autoPairing">Auto-Pair All Reads</span>
@@ -45,6 +45,22 @@
                             <small class="text-muted ms-2">
                                 Automatically detects pairs and creates Galaxy collections
                             </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Progress Indicator -->
+            <div ng-if="progress" class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>{{progress.stage}}</span>
+                        <span>{{Math.round(progress.current)}}%</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" 
+                             style="width: {{progress.current}}%">
                         </div>
                     </div>
                 </div>
@@ -74,6 +90,81 @@
                             </div>
                             <div class="text-muted mt-2" ng-if="supportedPatterns.length > 5">
                                 And {{supportedPatterns.length - 5}} more patterns...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filters and Search -->
+            <div ng-if="pairedReads && pairedReads.success && pairedReads.paired_groups.length > 0" class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Filters & Search</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label class="form-label">Confidence</label>
+                            <select class="form-select" ng-model="filters.confidence">
+                                <option value="all">All Levels</option>
+                                <option value="high">High (≥70%)</option>
+                                <option value="medium">Medium (60-69%)</option>
+                                <option value="low">Low (<60%)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Pair Type</label>
+                            <select class="form-select" ng-model="filters.pairType">
+                                <option value="all">All Types</option>
+                                <option value="illumina_r1_r2">Illumina R1/R2</option>
+                                <option value="illumina_1_2">Illumina 1/2</option>
+                                <option value="forward_reverse">Forward/Reverse</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Collection Status</label>
+                            <select class="form-select" ng-model="filters.collectionStatus">
+                                <option value="all">All Status</option>
+                                <option value="created">Created</option>
+                                <option value="uncreated">Not Created</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Search</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" ng-model="filters.searchTerm" 
+                                       placeholder="Search names...">
+                                <button class="btn btn-outline-secondary" ng-click="filters.searchTerm = ''">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <label class="form-check">
+                                        <input class="form-check-input" type="checkbox" ng-model="selectAll" ng-change="toggleSelectAll()">
+                                        <span class="form-check-label">Select All ({{getFilteredPairs().length}})</span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <button class="btn btn-outline-primary btn-sm me-2" ng-click="exportResults()">
+                                        <i class="fas fa-download me-1"></i>
+                                        Export Results
+                                    </button>
+                                    <button class="btn btn-primary btn-sm" ng-click="batchCreateCollections()" 
+                                            ng-disabled="selectedPairs.length === 0 || batchCreating">
+                                        <i class="fas fa-layer-group me-1"></i>
+                                        <span ng-if="!batchCreating">Create Selected ({{selectedPairs.length}})</span>
+                                        <span ng-if="batchCreating">
+                                            <i class="fas fa-spinner fa-spin me-1"></i>
+                                            Creating...
+                                        </span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -112,9 +203,9 @@
                             <div class="col-md-3">
                                 <div class="stat-card">
                                     <div class="stat-number">
-                                        {{(pairedReads.pairedGroups | filter:{confidence: '<0.7'}).length}}
+                                        {{(pairedReads.pairedGroups | filter:{collectionCreated: true}).length}}
                                     </div>
-                                    <div class="stat-label">Low Confidence</div>
+                                    <div class="stat-label">Collections Created</div>
                                 </div>
                             </div>
                         </div>
@@ -123,32 +214,41 @@
                 
                 <!-- Paired Groups -->
                 <div class="card mb-4">
-                    <div class="card-header">
+                    <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">Detected Paired Groups</h5>
+                        <span class="badge bg-primary">{{getFilteredPairs().length}} of {{pairedReads.pairedGroups.length}}</span>
                     </div>
                     <div class="card-body">
-                        <div ng-if="pairedReads.pairedGroups.length === 0" class="text-center text-muted py-4">
+                        <div ng-if="getFilteredPairs().length === 0" class="text-center text-muted py-4">
                             <i class="fas fa-search fa-3x mb-3"></i>
-                            <p>No paired groups detected</p>
+                            <p>No paired groups match your filters</p>
                         </div>
                         
-                        <div class="row" ng-repeat="group in pairedReads.pairedGroups">
+                        <div class="row" ng-repeat="group in getFilteredPairs()">
                             <div class="col-12 mb-3">
                                 <div class="card" ng-class="{'border-success': group.confidence >= 0.7, 'border-warning': group.confidence < 0.7}">
                                     <div class="card-header d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-0">{{group.suggested_name}}</h6>
-                                            <small class="text-muted">
-                                                {{getPairTypeDescription(group.pair_type)}} • 
-                                                Confidence: {{(group.confidence * 100).toFixed(1)}}%
-                                            </small>
+                                        <div class="d-flex align-items-center">
+                                            <input type="checkbox" class="form-check-input me-3" 
+                                                   ng-model="selectedPairs" 
+                                                   ng-change="togglePairSelection(group.group_id)"
+                                                   ng-checked="selectedPairs.indexOf(group.group_id) !== -1">
+                                            <div>
+                                                <h6 class="mb-0">{{group.suggested_name}}</h6>
+                                                <small class="text-muted">
+                                                    {{getPairTypeDescription(group.pair_type)}} • 
+                                                    Confidence: {{(group.confidence * 100).toFixed(1)}}%
+                                                </small>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <span class="badge" 
-                                                  ng-class="getConfidenceLevel(group.confidence).class">
-                                                {{getConfidenceLevel(group.confidence).text}}
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge me-2" 
+                                                  ng-class="{'bg-success': getConfidenceColor(group.confidence) === 'success', 
+                                                           'bg-warning': getConfidenceColor(group.confidence) === 'warning',
+                                                           'bg-danger': getConfidenceColor(group.confidence) === 'danger'}">
+                                                {{(group.confidence * 100).toFixed(1)}}%
                                             </span>
-                                            <button class="btn btn-sm btn-primary ms-2" 
+                                            <button class="btn btn-sm btn-primary me-2" 
                                                     ng-click="createPairedCollection(group)"
                                                     ng-disabled="!canCreateCollection(group)"
                                                     ng-if="!group.collectionCreated">
@@ -156,7 +256,7 @@
                                                 Create Collection
                                                 <i class="fas fa-spinner fa-spin ms-1" ng-if="group.creating"></i>
                                             </button>
-                                            <span class="badge bg-success ms-2" ng-if="group.collectionCreated">
+                                            <span class="badge bg-success me-2" ng-if="group.collectionCreated">
                                                 <i class="fas fa-check me-1"></i>
                                                 Collection Created
                                             </span>
@@ -215,8 +315,14 @@
             
             <!-- Loading State -->
             <div ng-if="isLoading" class="text-center py-5">
-                <i class="fas fa-spinner fa-spin fa-3x mb-3"></i>
-                <p>Detecting paired reads...</p>
+                <div class="skeleton-loader">
+                    <div class="skeleton-card" ng-repeat="i in [1,2,3]">
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line short"></div>
+                        <div class="skeleton-line medium"></div>
+                    </div>
+                </div>
+                <p class="mt-3">Detecting paired reads...</p>
             </div>
             
             <!-- No Results State -->
@@ -251,6 +357,8 @@
     padding: 0.5rem;
     border-left: 3px solid #007bff;
     margin-bottom: 0.5rem;
+    background-color: #f8f9fa;
+    border-radius: 0.25rem;
 }
 
 .border-success {
@@ -259,5 +367,70 @@
 
 .border-warning {
     border-width: 2px !important;
+}
+
+.skeleton-loader {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.skeleton-card {
+    background: #f0f0f0;
+    border-radius: 8px;
+    padding: 1rem;
+    height: 150px;
+}
+
+.skeleton-line {
+    height: 12px;
+    background: #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+
+.skeleton-line.short { width: 60%; }
+.skeleton-line.medium { width: 80%; }
+
+@keyframes skeleton-loading {
+    0% { background-position: -200px 0; }
+    100% { background-position: calc(200px + 100%) 0; }
+}
+
+.skeleton-line {
+    background: linear-gradient(
+        90deg,
+        #f0f0f0 0px,
+        #e0e0e0 40px,
+        #f0f0f0 80px
+    );
+    background-size: 200px 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .stat-card {
+        background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+    }
+    
+    .file-info {
+        background-color: #374151;
+        border-left-color: #60a5fa;
+        color: #e2e8f0;
+    }
+    
+    .skeleton-card {
+        background: #4a5568;
+    }
+    
+    .skeleton-line {
+        background: linear-gradient(
+            90deg,
+            #4a5568 0px,
+            #2d3748 40px,
+            #4a5568 80px
+        );
+    }
 }
 </style>
