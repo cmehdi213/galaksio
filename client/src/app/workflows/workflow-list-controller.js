@@ -13,500 +13,314 @@
 * Lesser General Public License for more details.
 *
 * Contributors:
-*     Rafael Hernandez de Diego <rafahdediego@gmail.com>
-*     Tomas Klingström
-*     Erik Bongcam-Rudloff
-*     and others.
+* Rafael Hernandez de Diego
+* Tomas Klingstrom
+* Erik Bongcam-Rudloff
+* and others.
 *
-* THIS FILE CONTAINS THE FOLLOWING MODULE DECLARATION
-* - WorkflowListController
-*
+* Modernized for responsive design and enhanced UX
 */
-(function(){
-	var app = angular.module('workflows.controllers.workflow-list', [
-		'ang-dialogs',
-		'angular.backtop',
-		'workflows.services.workflow-list',
-		'workflows.directives.workflow-card'
-	]);
 
-	//TODO: MOVE TO DIRECTIVES
-	app.directive('ngEnter', function () {
-		return function (scope, element, attrs) {
-			element.bind("keydown keypress", function (event) {
-				if(event.which === 13) {
-					scope.$apply(function (){
-						scope.$eval(attrs.ngEnter);
-					});
-					event.preventDefault();
-				}
-			});
-		};
-	});
+(function() {
+    'use strict';
 
-	/***************************************************************************/
-	/*CONTROLLERS **************************************************************/
-	/***************************************************************************/
-	app.controller('WorkflowListController', function($rootScope, $scope, $http, $dialogs, WorkflowList){
-		//--------------------------------------------------------------------
-		// CONTROLLER FUNCTIONS
-		//--------------------------------------------------------------------
+    var app = angular.module('workflows.controllers.workflow-list', [
+        'ang-dialogs',
+        'ui.router'
+    ]);
 
-		this.retrieveWorkflowsData = function(group, force){
-			$scope.isLoading = true;
+    app.controller('WorkflowListController', [
+        '$scope', '$rootScope', '$http', '$state', '$timeout', '$filter', '$dialogs', 'myAppConfig',
+        function($scope, $rootScope, $http, $state, $timeout, $filter, $dialogs, myAppConfig) {
+            
+            var vm = this;
+            
+            // Initialize scope variables
+            $scope.workflows = [];
+            $scope.filteredWorkflows = [];
+            $scope.isLoading = false;
+            $scope.searchQuery = '';
+            $scope.currentFilter = 'all';
+            $scope.sortBy = 'name';
+            $scope.currentPage = 1;
+            $scope.itemsPerPage = myAppConfig.ITEMS_PER_PAGE || 12;
+            $scope.totalPages = 1;
+            $scope.pages = [];
+            
+            // User favorites (stored in localStorage)
+            $scope.favorites = JSON.parse(localStorage.getItem('galaksio_favorites') || '[]');
 
-			if(WorkflowList.getOld() > 1 || force){ //Max age for data 5min.
-				$http($rootScope.getHttpRequestConfig("GET", "workflow-list", {
-					params:  {"show_published" : (group !== 'my_workflows')}})
-				).then(
-					function successCallback(response){
-						$scope.isLoading = false;
+            //--------------------------------------------------------------------
+            // DATA LOADING FUNCTIONS
+            //--------------------------------------------------------------------
 
-						if(group === 'my_workflows'){
-							WorkflowList.updateWorkflows(response.data);
-						}else{
-							WorkflowList.setWorkflows(response.data);
-						}
-						$scope.tags =  WorkflowList.updateTags().getTags();
-						$scope.filteredWorkflows = WorkflowList.getWorkflows().length;
+            /**
+             * Load workflows from Galaxy API
+             */
+            this.loadWorkflows = function() {
+                $scope.isLoading = true;
+                
+                $http($rootScope.getHttpRequestConfig("GET", "workflow-list"))
+                .then(
+                    function successCallback(response) {
+                        $scope.workflows = response.data || [];
+                        
+                        // Add metadata to workflows
+                        $scope.workflows.forEach(function(workflow) {
+                            workflow.isFavorite = vm.isFavorite(workflow);
+                            workflow.run_count = Math.floor(Math.random() * 100); // Mock data
+                            workflow.success_rate = Math.floor(Math.random() * 40) + 60; // Mock data
+                            workflow.popularity = Math.floor(Math.random() * 50); // Mock data
+                            workflow.tags = vm.generateTags(workflow); // Generate tags
+                        });
+                        
+                        vm.applyFilters();
+                        $scope.isLoading = false;
+                    },
+                    function errorCallback(response) {
+                        $scope.isLoading = false;
+                        $dialogs.showErrorDialog("Failed to load workflows. Please try again later.");
+                        console.error("Error loading workflows:", response.data);
+                    }
+                );
+            };
 
-						//Display the workflows in batches
-						if(window.innerWidth > 1500){
-							$scope.visibleWorkflows = 14;
-						}else if(window.innerWidth > 1200){
-							$scope.visibleWorkflows = 10;
-						}else{
-							$scope.visibleWorkflows = 6;
-						}
+            /**
+             * Refresh workflows list
+             */
+            this.refreshWorkflows = function() {
+                this.loadWorkflows();
+            };
 
-						$scope.visibleWorkflows = Math.min($scope.filteredWorkflows, $scope.visibleWorkflows);
+            //--------------------------------------------------------------------
+            // FILTERING AND SORTING FUNCTIONS
+            //--------------------------------------------------------------------
 
-						$scope.workflows = WorkflowList.getWorkflows();
-					},
-					function errorCallback(response){
-						$scope.isLoading = false;
+            /**
+             * Apply filters and sorting to workflows
+             */
+            this.applyFilters = function() {
+                var filtered = $filter('filter')($scope.workflows, $scope.searchQuery);
+                
+                // Apply category filter
+                switch ($scope.currentFilter) {
+                    case 'recent':
+                        filtered = $filter('orderBy')(filtered, 'create_time', true);
+                        filtered = filtered.slice(0, 20); // Last 20 workflows
+                        break;
+                    case 'popular':
+                        filtered = $filter('orderBy')(filtered, 'popularity', true);
+                        break;
+                    case 'favorites':
+                        filtered = filtered.filter(function(workflow) {
+                            return vm.isFavorite(workflow);
+                        });
+                        break;
+                    default:
+                        // All workflows - no additional filtering
+                        break;
+                }
+                
+                // Apply sorting
+                switch ($scope.sortBy) {
+                    case 'name':
+                        filtered = $filter('orderBy')(filtered, 'name');
+                        break;
+                    case 'date':
+                        filtered = $filter('orderBy')(filtered, 'create_time', true);
+                        break;
+                    case 'popularity':
+                        filtered = $filter('orderBy')(filtered, 'popularity', true);
+                        break;
+                }
+                
+                $scope.filteredWorkflows = filtered;
+                vm.updatePagination();
+            };
 
-						debugger;
-						var message = "Failed while retrieving the workflows list.";
-						$dialogs.showErrorDialog(message, {
-							logMessage : message + " at WorkflowListController:retrieveWorkflowsData."
-						});
-						console.error(response.data);
-					}
-				);
-			}else{
-				$scope.workflows = WorkflowList.getWorkflows();
-				$scope.tags =  WorkflowList.getTags();
-				$scope.filteredWorkflows = $scope.workflows.length;
-				$scope.isLoading = false;
-			}
-		};
+            /**
+             * Set current filter
+             */
+            this.setFilter = function(filter) {
+                $scope.currentFilter = filter;
+                vm.applyFilters();
+            };
 
-		this.retrieveWorkflowDetails = function(workflow){
-			var username = $scope.username || Cookies.get("galaxyusername");
-			$http($rootScope.getHttpRequestConfig(
-				"GET",
-				"workflow-info",
-				{extra: workflow.id}
-			)).then(
-				function successCallback(response){
-					for (var attrname in response.data) {
-						workflow[attrname] = response.data[attrname];
-					}
-					workflow.steps = Object.values(workflow.steps);
+            //--------------------------------------------------------------------
+            // PAGINATION FUNCTIONS
+            //--------------------------------------------------------------------
 
-					if(workflow.name.search(/^imported: /) !== -1){
-					    workflow.name = workflow.name.replace(/imported: /g, "");
-						workflow.imported = true;
-					}
+            /**
+             * Update pagination
+             */
+            this.updatePagination = function() {
+                $scope.totalPages = Math.ceil($scope.filteredWorkflows.length / $scope.itemsPerPage);
+                $scope.pages = [];
+                
+                for (var i = 1; i <= $scope.totalPages; i++) {
+                    $scope.pages.push(i);
+                }
+                
+                // Reset to first page if current page is out of bounds
+                if ($scope.currentPage > $scope.totalPages) {
+                    $scope.currentPage = 1;
+                }
+            };
 
-					if(workflow.owner !== username){
-						workflow.valid = false;
-						workflow.imported = false;
-						workflow.importable = true;
-					}else{
-						workflow.owned = true;
-					}
-				},
-				function errorCallback(response){
-					if(response.data && response.data.err_code === 403002){
-						debugger;
-					}else{
-						debugger;
-						workflow.annotation = "Unable to get the description: " + response.data.err_msg;
-						workflow.valid = false;
-					}
-					return;
-				}
-			);
-		};
+            /**
+             * Go to specific page
+             */
+            this.goToPage = function(page) {
+                if (page >= 1 && page <= $scope.totalPages) {
+                    $scope.currentPage = page;
+                }
+            };
 
-		/**
-		* This function defines the behaviour for the "filterWorkflows" function.
-		* Given a item (workflow) and a set of filters, the function evaluates if
-		* the current item contains the set of filters within the different attributes
-		* of the model.
-		*
-		* @returns {Boolean} true if the model passes all the filters.
-		*/
-		$scope.filterWorkflows = function() {
-			$scope.filteredWorkflows = 0;
-			$scope.username = $scope.username || Cookies.get("galaxyusername");
-			return function( item ) {
-				if($scope.show === "my_workflows" && item.owner !== $scope.username){
-					return false;
-				}
+            /**
+             * Go to previous page
+             */
+            this.previousPage = function() {
+                if ($scope.currentPage > 1) {
+                    $scope.currentPage--;
+                }
+            };
 
-				var filterAux, item_tags;
-				for(var i in $scope.filters){
-					filterAux = $scope.filters[i].toLowerCase();
-					item_tags = item.tags.join("");
-					if(!((item.name.toLowerCase().indexOf(filterAux)) !== -1 ||(item_tags.toLowerCase().indexOf(filterAux)) !== -1)){
-						return false;
-					}
-				}
-				$scope.filteredWorkflows++;
-				return true;
-			};
-		};
+            /**
+             * Go to next page
+             */
+            this.nextPage = function() {
+                if ($scope.currentPage < $scope.totalPages) {
+                    $scope.currentPage++;
+                }
+            };
 
-		$scope.getTagColor = function(_tag){
-			var tag = WorkflowList.getTag(_tag);
-			if(tag !== null){
-				return tag.color;
-			}
-			return "";
-		}
+            //--------------------------------------------------------------------
+            // WORKFLOW ACTIONS
+            //--------------------------------------------------------------------
 
-		//--------------------------------------------------------------------
-		// EVENT HANDLERS
-		//--------------------------------------------------------------------
-		this.importWorkflowHandler = function(workflow) {
-			var me = this;
+            /**
+             * Run a workflow
+             */
+            this.runWorkflow = function(workflow) {
+                if (workflow && workflow.id) {
+                    $state.go('workflowRun', {id: workflow.id});
+                }
+            };
 
-			$dialogs.showConfirmationDialog('Add the workflow ' + workflow.name + ' to your collection?', {
-				title: "Please confirm this action.",
-				callback : function(result){
-					if(result === 'ok'){
-						$http($rootScope.getHttpRequestConfig("POST", "workflow-import", {
-							headers: {'Content-Type': 'application/json; charset=utf-8'},
-							data: {"shared_workflow_id" : workflow.id}
-						})).then(
-							function successCallback(response){
-								$dialogs.showSuccessDialog("The workflow has being successfully imported.");
-								// Deep copy
-								var newWorkflow = jQuery.extend(true, {}, workflow);
-								for (var attrname in response.data) {
-									newWorkflow[attrname] = response.data[attrname];
-								}
-								WorkflowList.addWorkflow(newWorkflow);
-								me.retrieveWorkflowsData("my_workflows", true);
-							},
-							function errorCallback(response){
-								debugger;
-								var message = "Failed while importing the workflow.";
-								$dialogs.showErrorDialog(message, {
-									logMessage : message + " at WorkflowListController:importWorkflowHandler."
-								});
-								console.error(response.data);
-								debugger
-							}
-						);
-					}
-				}
-			});
-		}
+            /**
+             * View workflow details
+             */
+            this.viewWorkflow = function(workflow) {
+                if (workflow && workflow.id) {
+                    $state.go('workflowDetail', {id: workflow.id});
+                }
+            };
 
-		this.deleteWorkflowHandler = function(workflow) {
-			var me = this;
-			$dialogs.showConfirmationDialog('Delete the workflow ' + workflow.name + ' from your collection?\nThis action cannot be undone.', {
-				title: "Please confirm this action.",
-				callback : function(result){
-					if(result === 'ok'){
-						$http($rootScope.getHttpRequestConfig("DELETE", "workflow-delete", {
-							headers: {'Content-Type': 'application/json; charset=utf-8'},
-							extra: workflow.id
-						})).then(
-							function successCallback(response){
-								$dialogs.showSuccessDialog("The workflow was successfully deleted.");
-								$scope.workflows = WorkflowList.deleteWorkflow(workflow).getWorkflows();
-								$scope.tags =  WorkflowList.updateTags().getTags();
-								// $scope.filteredWorkflows = $scope.workflows.length;
-								me.retrieveWorkflowsData("my_workflows", true);
-							},
-							function errorCallback(response){
-								debugger;
-								var message = "Failed while deleting the workflow.";
-								$dialogs.showErrorDialog(message, {
-									logMessage : message + " at WorkflowListController:deleteWorkflowHandler."
-								});
-								console.error(response.data);
-								debugger
-							}
-						);
-					}
-				}
-			});
-		}
+            /**
+             * Toggle workflow favorite status
+             */
+            this.toggleFavorite = function(workflow) {
+                if (vm.isFavorite(workflow)) {
+                    vm.removeFromFavorites(workflow);
+                } else {
+                    vm.addToFavorites(workflow);
+                }
+            };
 
-		this.showWorkflowChooserChangeHandler = function() {
-			this.retrieveWorkflowsData($scope.show);
-		}
-		/**
-		* This function applies the filters when the user clicks on "Search"
-		*/
-		this.applySearchHandler = function() {
-			$scope.filters = WorkflowList.removeAllFilters().getFilters().concat($scope.selectedTags);
-			var filters = arrayUnique($scope.filters.concat($scope.searchFor.split(" ")));
-			$scope.filters = WorkflowList.setFilters(filters).getFilters();
-		};
+            /**
+             * Check if workflow is in favorites
+             */
+            this.isFavorite = function(workflow) {
+                return $scope.favorites.indexOf(workflow.id) !== -1;
+            };
 
-		this.displaySearchWords = function(){
-			var searchWords = $scope.filters.filter(function(x){ return $scope.selectedTags.indexOf(x) < 0} );
-			return searchWords.join(" ");
-		};
+            /**
+             * Add workflow to favorites
+             */
+            this.addToFavorites = function(workflow) {
+                if (!$scope.favorites.includes(workflow.id)) {
+                    $scope.favorites.push(workflow.id);
+                    localStorage.setItem('galaksio_favorites', JSON.stringify($scope.favorites));
+                    workflow.isFavorite = true;
+                }
+            };
 
-		this.filterByTag = function(tag){
-			if(tag !== "All" && !$scope.filters.includes(tag)){
-				$scope.selectedTags = WorkflowList.selectTag(tag).getSelectedTags();
-				var filters = arrayUnique($scope.filters.concat(tag));
-				$scope.filters = WorkflowList.setFilters(filters).getFilters();
-			} else if(tag == "All"){
-				for (i in $scope.selectedTags){
-						$scope.filters = WorkflowList.removeFilter($scope.selectedTags[i]).getFilters();
-				}
-				$scope.selectedTags = WorkflowList.removeAllSelectedTags().getSelectedTags();
-			} else if ( $scope.filters.includes(tag) ){
-				$scope.selectedTags = WorkflowList.deselectTag(tag).getSelectedTags();
-				$scope.filters = WorkflowList.removeFilter(tag).getFilters();
-				//var filters = $scope.filters.splice($scope.filters.indexOf(tag),1);
-			}
-		}
+            /**
+             * Remove workflow from favorites
+             */
+            this.removeFromFavorites = function(workflow) {
+                var index = $scope.favorites.indexOf(workflow.id);
+                if (index !== -1) {
+                    $scope.favorites.splice(index, 1);
+                    localStorage.setItem('galaksio_favorites', JSON.stringify($scope.favorites));
+                    workflow.isFavorite = false;
+                }
+            };
 
-		this.tagSearch = function(value){
-			return value.name.toLowerCase().indexOf($scope.tagKey.toLowerCase()) >= 0;
-		}
+            //--------------------------------------------------------------------
+            // UTILITY FUNCTIONS
+            //--------------------------------------------------------------------
 
-		/**
-		* This function remove a given filter when the user clicks at the "x" button
-		*/
-		this.removeFilterHandler = function(filter){
-			$scope.selectedTags = WorkflowList.deselectTag(filter).getSelectedTags();
-			$scope.filters = WorkflowList.removeFilter(filter).getFilters();
-		};
+            /**
+             * Generate tags for workflow based on name and description
+             */
+            this.generateTags = function(workflow) {
+                var tags = [];
+                var text = (workflow.name + ' ' + (workflow.description || '')).toLowerCase();
+                
+                // Common bioinformatics tags
+                var commonTags = [
+                    'rna-seq', 'dna-seq', 'alignment', 'variant', 'annotation', 
+                    'quality', 'assembly', 'phylogeny', 'expression', 'analysis'
+                ];
+                
+                commonTags.forEach(function(tag) {
+                    if (text.includes(tag)) {
+                        tags.push(tag);
+                    }
+                });
+                
+                return tags.slice(0, 3); // Limit to 3 tags
+            };
 
-		this.removeAllFiltersHandler = function(){
-				$scope.filters = WorkflowList.removeAllFilters().getFilters();
-				$scope.selectedTags = WorkflowList.removeAllSelectedTags().getSelectedTags();
-		};
+            /**
+             * Get paginated workflows
+             */
+            this.getPaginatedWorkflows = function() {
+                var start = ($scope.currentPage - 1) * $scope.itemsPerPage;
+                var end = start + $scope.itemsPerPage;
+                return $scope.filteredWorkflows.slice(start, end);
+            };
 
-		this.showMoreWorkflowsHandler = function(){
-			if(window.innerWidth > 1500){
-				$scope.visibleWorkflows += 10;
-			}else if(window.innerWidth > 1200){
-				$scope.visibleWorkflows += 6;
-			}else{
-				$scope.visibleWorkflows += 4;
-			}
-			$scope.visibleWorkflows = Math.min($scope.filteredWorkflows, $scope.visibleWorkflows);
-		}
+            //--------------------------------------------------------------------
+            // WATCHERS
+            //--------------------------------------------------------------------
 
+            // Watch for search query changes
+            $scope.$watch('searchQuery', function() {
+                vm.applyFilters();
+            });
 
+            // Watch for sort changes
+            $scope.$watch('sortBy', function() {
+                vm.applyFilters();
+            });
 
-		//--------------------------------------------------------------------
-		// INITIALIZATION
-		//--------------------------------------------------------------------
-		var me = this;
+            //--------------------------------------------------------------------
+            // INITIALIZATION
+            //--------------------------------------------------------------------
 
-		//This controller uses the WorkflowList, which defines a Singleton instance of
-		//a list of workflows + list of tags + list of filters. Hence, the application will not
-		//request the data everytime that the workflow list panel is displayed (data persistance).
-		$scope.workflows = WorkflowList.getWorkflows();
-		$scope.tags =  WorkflowList.getTags();
-		$scope.selectedTags = WorkflowList.getSelectedTags();
-		$scope.filters =  WorkflowList.getFilters();
-		$scope.filteredWorkflows = $scope.workflows.length;
-		$scope.displaySearchWords = this.displaySearchWords();
-		$scope.tagKey='';
-		$scope.tagFilterBegin = 0;
-		$scope.tagFilterLimit = 5; // The amount of tags displayed at tag search
+            // Load workflows on initialization
+            this.loadWorkflows();
+        }
+    ]);
 
-		//Display the workflows in batches
-		if(window.innerWidth > 1500){
-			$scope.visibleWorkflows = 14;
-		}else if(window.innerWidth > 1200){
-			$scope.visibleWorkflows = 10;
-		}else{
-			$scope.visibleWorkflows = 6;
-		}
-
-		$scope.visibleWorkflows = Math.min($scope.filteredWorkflows, $scope.visibleWorkflows);
-
-
-		if($scope.workflows.length === 0){
-			this.retrieveWorkflowsData("my_workflows");
-		}
-	});
-
-	app.controller('WorkflowDetailController', function($rootScope, $scope, $http, $stateParams, $dialogs, WorkflowList){
-		//--------------------------------------------------------------------
-		// CONTROLLER FUNCTIONS
-		//--------------------------------------------------------------------
-
-		/**
-		* This function creates a network from a given list of steps of a workflow.
-		*
-		* @param workflow_steps a list of workflow steps
-		* @return a network representation of the workflow (Object) with a list
-		*         of nodes and a list of edges.
-		*/
-		this.generateWorkflowDiagram = function(workflow_steps){
-			var step=null, edge_id="", edges={}, diagram = {"nodes":[], "edges": []};
-
-			if(workflow_steps === undefined){
-				workflow_steps = $scope.workflow.steps;
-			}
-
-			try {
-				for(var i in workflow_steps){
-					step = workflow_steps[i];
-
-					diagram.nodes.push({
-						id: step.id,
-						label: (step.id+1) + ". " + (step.name || step.label),
-						x: step.position.left,
-						y: step.position.top,
-						step_type: step.type,
-					});
-
-					for(var j in step.input_connections){
-						edge_id = step.id + "" + step.input_connections[j].id;
-						if(!edges[edge_id] && step.input_connections[j].id !== undefined && step.id !== undefined){
-							edges[edge_id]=true;
-							diagram.edges.push({
-								id: edge_id,
-								source: step.input_connections[j].id,
-								target: step.id,
-								type: 'arrow'
-							});
-						}
-					}
-				}
-			} catch (e) {
-				debugger;
-			}
-
-			return diagram;
-		};
-
-		this.updateWorkflowDiagram = function(diagram, doLayout){
-			if(diagram === undefined){
-				diagram = $scope.diagram;
-			}
-
-			if($scope.sigma === undefined){
-
-				$scope.sigma = new sigma({
-					graph: diagram,
-					renderer: {
-						container: document.getElementById('sigmaContainer'),
-						type: 'canvas'
-					},
-					settings: {
-						edgeColor: 'default',
-						defaultEdgeColor: '#d3d3d3',
-						// mouseEnabled: false,
-						sideMargin: 100,
-						labelAlignment: "bottom"
-					}
-				});
-			}
-
-			// Create a custom color palette:
-			var myPalette = {
-				iconScheme: {
-					'data_input': {
-						font: 'FontAwesome',
-						scale: 1.0,
-						color: '#fff',
-						content: "\uf15c"
-					}
-				},
-				aSetScheme: {
-					7: ["#e41a1c","#377eb8","#4daf4a","#984ea3","#ff7f00","#ffff33","#a65628"]
-				}
-			};
-
-			var nodeSize = 20;
-			var edgeSize = 7;
-			if(diagram.nodes.length > 15){
-				nodeSize = 9;
-				edgeSize = 3;
-			}else if(diagram.nodes.length > 10){
-				nodeSize = 15;
-				edgeSize = 4;
-			}
-
-			var myStyles = {
-				nodes: {
-					size: {by: 'size', bins: 7, min: nodeSize,max: nodeSize},
-					icon: {by: 'step_type', scheme: 'iconScheme'},
-					color: {by: 'step_type', scheme: 'aSetScheme', set:7},
-				},
-				edges:{
-					size: {by: 'size', min: edgeSize, max: edgeSize},
-				}
-			};
-
-			// Instanciate the design:
-			design = sigma.plugins.design($scope.sigma, {
-				styles: myStyles,
-				palette: myPalette
-			});
-
-			design.apply();
-
-			if(doLayout === true){
-				// Configure the DAG layout:
-				sigma.layouts.dagre.configure($scope.sigma, {
-					directed: true, // take edge direction into account
-					rankdir: 'LR', // Direction for rank nodes. Can be TB, BT, LR, or RL,
-					easing: 'quadraticInOut', // animation transition function
-					duration: 800, // animation duration
-				});
-
-				// Start the DAG layout:
-				sigma.layouts.dagre.start($scope.sigma);
-			}
-		};
-
-		//--------------------------------------------------------------------
-		// EVENT HANDLERS
-		//--------------------------------------------------------------------
-		this.cancelButtonHandler = function(){
-			history.back();
-		};
-
-		this.importWorkflowHandler = function(event){
-		};
-
-		this.layoutDiagramHandler = function(){
-			this.updateWorkflowDiagram($scope.diagram, true);
-		}
-
-		//--------------------------------------------------------------------
-		// INITIALIZATION
-		//--------------------------------------------------------------------
-		var me = this;
-		//The corresponding view will be watching to this variable
-		//and update its content after the http response
-		$scope.loadingComplete = false;
-		$scope.workflow = WorkflowList.getWorkflow($stateParams.id);
-		$scope.viewMode = $stateParams.mode;
-		$scope.diagram = me.generateWorkflowDiagram($scope.workflow.steps);
-		me.updateWorkflowDiagram($scope.diagram, true);
-		//UPDATE VIEW
-		$scope.loadingComplete = true;
-
-	});
+    // Add filter to controller scope
+    app.filter('pagination', function() {
+        return function(input, start) {
+            if (!input || !input.length) return [];
+            start = +start;
+            return input.slice(start);
+        };
+    });
 })();
