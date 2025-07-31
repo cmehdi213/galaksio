@@ -1,47 +1,41 @@
-<div class="imageContainer" style="text-align:center; font-size:10px; color:#898989" >
-    <img src="https://cloud.githubusercontent.com/assets/11427394/26060697/1dc10348-3986-11e7-92ae-e41b98a27625.png" title="Galaksio logo."/>
-</div>
+# Galaksio - An easy-to-use GUI for running Galaxy workflows
 
-> An easy to use GUI for running Galaxy workflows.
+![Galaksio Logo](docs/galaksio_logo.png)
 
-Galaksio is a web application that simplifies the usage of the Galaxy bioinformatics platform (https://usegalaxy.eu/).
-Galaksio provides a simple but complete UI for using Galaxy for biologists that require bioinformatics workflows to complete their research.
-Using the application, users can run any workflow implemented in the associated Galaxy instance in just few *clicks*.
-Besides, the rich user interface allows customizing the execution, uploading the necessary files, downloading the results, and executing several workflows simultaneously in the background.
+Galaksio is a web application that simplifies the usage of the Galaxy bioinformatics platform. It provides a simple but complete UI for using Galaxy for biologists that require bioinformatics workflows to complete their research.
 
-![](./docs/1_1_galaxy/galaksio_screenshot.png)
+## 🚀 What's New in Version 0.4.0
 
-### Quick start
-First install all dependencies. For example, the instructions for an Ubuntu 16.04 server would be:
+- **Galaxy 25.0 Compatibility**: Full support for Galaxy Project version 25.0
+- **Python 3.9+ Support**: Updated to use Python 3.9 or later
+- **BioBlend 1.6.0**: Updated to the latest BioBlend version for better API compatibility
+- **Enhanced Error Handling**: Improved error handling and logging
+- **Security Improvements**: Better security configurations and CORS support
+
+## Features
+
+- ✅ **Simple Interface**: Easy-to-use interface for biologists
+- ✅ **Workflow Management**: Run any Galaxy workflow with just a few clicks
+- ✅ **File Upload**: Upload files directly to Galaxy
+- ✅ **Result Download**: Download workflow results easily
+- ✅ **Batch Processing**: Run multiple workflows simultaneously
+- ✅ **Galaxy 25.0 Ready**: Compatible with the latest Galaxy version
+
+## Quick Start
+
+### Prerequisites
+
+- Python 3.9 or later
+- pip (Python package manager)
+- Access to a Galaxy instance (v19.05 or later, tested with v25.0)
+
+### Installation
+
+1. **Install dependencies**:
 ```bash
-apt-get update
-apt-get install -y python-pip unzip wget
-pip install requests bioblend flask fpdf
-```
+# For Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install -y python3 python3-pip git
 
-Download and extract the [latest version](https://github.com/fikipollo/galaksio.git) of Galaksio from the GitHub repository.
-```bash
-wget https://github.com/sgbc/galaksio/archive/master.zip
-unzip galaksio-latest.zip
-```
-
-Launch the Flask server. Your new Galaksio instance will be listening to port 8081.
-```bash
-galaksio-latest/server/run.sh --start
-```
-
-By default Galaksio is configured to work with the official [Galaxy](https://usegalaxy.eu) instance.This and other options can be customized through the web application. The first time that you access to your Galaksio instance you will need to configure some of the main settings.
-
-## Documentation
-Documentation for the project, including installation instructions, can be found at the ReadTheDocs platform: [http://galaksio.readthedocs.io/en/latest/](http://galaksio.readthedocs.io/en/latest/).
-
-## Docker for Galaksio
-The Galaksio Docker Image is an easy distributable full-fledged Galaksio installation.
-The docker image for Galaksio can be found in the [docker hub](https://hub.docker.com/r/fikipollo/galaksio/). However, you can download the Dockerfile and other files from the [Github repository](https://github.com/fikipollo/galaksio-docker)
-
-## About
-Galaksio has been developed by the [SLU Global Bioinformatics Centre](http://sgbc.slu.se/) at the Sveriges lantbruksuniversitet (Swedish University of Agricultural Sciences).
-This project is part of the B3Africa Project [http://www.b3africa.org/](http://www.b3africa.org/), which has received funding under grant agreement nr 654404 from the European Union’s Horizon 2020 research and innovation programme.
-**Galaksio** application is distributed under **GNU General Public License, Version 3.**.
-
-<img style="display:block; margin:auto;" src="https://user-images.githubusercontent.com/11427394/30154858-76cd4d9a-93bb-11e7-8834-c2d3dbf95ba3.png" title="Logos"/>
+# For CentOS/RHEL
+sudo yum install -y python3 python3-pip git
