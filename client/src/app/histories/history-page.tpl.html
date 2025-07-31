@@ -1,6 +1,369 @@
-<div>
-	<nav class="navbar navbar-default navbar-top title-bar">
-		<h1>Histories <small>Selection</small></h1>
-	</nav>
-	<history-list-panel></history-list-panel>
+<div class="workflow-run-container">
+    <!-- Header Section -->
+    <div class="page-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="page-title">
+                    <i class="fas fa-play me-2"></i>
+                    Run Workflow
+                </h1>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="#" ng-click="main.setPage('workflows')">Workflows</a></li>
+                        <li class="breadcrumb-item"><a href="#" ng-click="viewWorkflow()">{{workflow.name}}</a></li>
+                        <li class="breadcrumb-item active">Run</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="col-md-4">
+                <div class="header-actions">
+                    <button class="btn btn-outline-secondary me-2" ng-click="cancelRun()">
+                        <i class="fas fa-times me-1"></i> Cancel
+                    </button>
+                    <button class="btn btn-success" ng-click="startWorkflow()" ng-disabled="!isReadyToRun()">
+                        <i class="fas fa-play me-1"></i> Start Workflow
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-state" ng-if="isLoading">
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading workflow configuration...</p>
+        </div>
+    </div>
+
+    <!-- Workflow Run Content -->
+    <div class="workflow-run-content" ng-if="!isLoading && workflow">
+        <!-- Progress Indicator -->
+        <div class="progress-indicator mb-4 animate-fade-in-up">
+            <div class="progress-steps">
+                <div class="step" ng-class="{active: currentStep === 1, completed: currentStep > 1}">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Select Inputs</div>
+                </div>
+                <div class="step" ng-class="{active: currentStep === 2, completed: currentStep > 2}">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Configure Parameters</div>
+                </div>
+                <div class="step" ng-class="{active: currentStep === 3, completed: currentStep > 3}">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Review & Run</div>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" ng-style="{width: (currentStep / 3 * 100) + '%'}"></div>
+            </div>
+        </div>
+
+        <!-- Step 1: Input Selection -->
+        <div class="step-content" ng-show="currentStep === 1">
+            <div class="card animate-fade-in-up">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-upload me-2"></i>
+                        Select Input Files
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="input-section">
+                        <div class="row">
+                            <div class="col-md-6" ng-repeat="input in workflow.inputs">
+                                <div class="input-item">
+                                    <label class="form-label">{{input.name}}</label>
+                                    <p class="text-muted small">{{input.description || 'No description available'}}</p>
+                                    
+                                    <!-- File Upload -->
+                                    <div class="file-upload-area" 
+                                         ng-class="{'has-file': inputFiles[input.id]}"
+                                         ng-click="selectFile(input.id)">
+                                        <div ng-if="!inputFiles[input.id]" class="upload-placeholder">
+                                            <i class="fas fa-cloud-upload-alt fa-2x text-muted mb-2"></i>
+                                            <p>Click to select file or drag and drop</p>
+                                            <small class="text-muted">Supported formats: {{input.formats || '*'}}</small>
+                                        </div>
+                                        <div ng-if="inputFiles[input.id]" class="file-info">
+                                            <i class="fas fa-file me-2"></i>
+                                            <span>{{inputFiles[input.id].name}}</span>
+                                            <button type="button" class="btn btn-sm btn-outline-danger ms-2"
+                                                    ng-click="removeFile(input.id, $event)">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                        <input type="file" 
+                                               id="file-{{input.id}}"
+                                               class="d-none"
+                                               accept="{{input.formats || '*'}}"
+                                               onchange="handleFileSelect(this, '{{input.id}}')">
+                                    </div>
+                                    
+                                    <!-- File History -->
+                                    <div class="file-history mt-2" ng-if="getRecentFiles(input.id).length > 0">
+                                        <small class="text-muted d-block mb-1">Recent files:</small>
+                                        <div class="recent-files">
+                                            <span class="recent-file badge bg-light text-dark me-1 mb-1"
+                                                  ng-repeat="file in getRecentFiles(input.id)"
+                                                  ng-click="selectRecentFile(input.id, file)">
+                                                {{file.name}}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="step-navigation mt-4">
+                        <button class="btn btn-secondary" ng-click="cancelRun()">
+                            <i class="fas fa-times me-1"></i> Cancel
+                        </button>
+                        <button class="btn btn-primary float-end" ng-click="nextStep()" ng-disabled="!allInputsSelected()">
+                            Next <i class="fas fa-arrow-right ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Parameter Configuration -->
+        <div class="step-content" ng-show="currentStep === 2">
+            <div class="card animate-fade-in-up">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-sliders-h me-2"></i>
+                        Configure Parameters
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="parameters-section">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Configure the parameters for each step of the workflow. Default values are provided.
+                        </div>
+                        
+                        <div class="parameter-groups">
+                            <div class="parameter-group" ng-repeat="step in workflow.steps">
+                                <h5 class="step-title">
+                                    <i class="fas fa-cog me-2"></i>
+                                    {{step.name || 'Step ' + ($index + 1)}}
+                                </h5>
+                                
+                                <div class="parameters">
+                                    <div class="parameter-item" ng-repeat="param in step.parameters">
+                                        <label class="form-label">
+                                            {{param.name}}
+                                            <i class="fas fa-info-circle text-muted ms-1" 
+                                               ng-if="param.description"
+                                               title="{{param.description}}"></i>
+                                        </label>
+                                        
+                                        <!-- Text Input -->
+                                        <input type="text" 
+                                               class="form-control" 
+                                               ng-model="parameters[param.id]"
+                                               ng-if="param.type === 'text'"
+                                               placeholder="{{param.placeholder || ''}}"
+                                               ng-required="param.required">
+                                        
+                                        <!-- Number Input -->
+                                        <input type="number" 
+                                               class="form-control" 
+                                               ng-model="parameters[param.id]"
+                                               ng-if="param.type === 'number'"
+                                               placeholder="{{param.placeholder || ''}}"
+                                               min="{{param.min}}"
+                                               max="{{param.max}}"
+                                               step="{{param.step || 1}}"
+                                               ng-required="param.required">
+                                        
+                                        <!-- Select Dropdown -->
+                                        <select class="form-select" 
+                                                ng-model="parameters[param.id]"
+                                                ng-if="param.type === 'select'"
+                                                ng-required="param.required">
+                                            <option value="">Select an option...</option>
+                                            <option ng-repeat="option in param.options" 
+                                                    value="{{option.value}}">
+                                                {{option.label}}
+                                            </option>
+                                        </select>
+                                        
+                                        <!-- Checkbox -->
+                                        <div class="form-check" ng-if="param.type === 'boolean'">
+                                            <input class="form-check-input" 
+                                                   type="checkbox" 
+                                                   id="param-{{param.id}}"
+                                                   ng-model="parameters[param.id]">
+                                            <label class="form-check-label" for="param-{{param.id}}">
+                                                {{param.description || param.name}}
+                                            </label>
+                                        </div>
+                                        
+                                        <!-- Help Text -->
+                                        <small class="form-text text-muted" ng-if="param.help_text">
+                                            {{param.help_text}}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="step-navigation mt-4">
+                        <button class="btn btn-secondary" ng-click="previousStep()">
+                            <i class="fas fa-arrow-left me-1"></i> Previous
+                        </button>
+                        <button class="btn btn-primary float-end" ng-click="nextStep()">
+                            Next <i class="fas fa-arrow-right ms-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Review and Run -->
+        <div class="step-content" ng-show="currentStep === 3">
+            <div class="card animate-fade-in-up">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-clipboard-check me-2"></i>
+                        Review & Run
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="review-section">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Please review your workflow configuration before starting the execution.
+                        </div>
+                        
+                        <!-- Workflow Summary -->
+                        <div class="review-section">
+                            <h5>Workflow Summary</h5>
+                            <div class="review-item">
+                                <label>Workflow Name:</label>
+                                <span>{{workflow.name}}</span>
+                            </div>
+                            <div class="review-item">
+                                <label>Target History:</label>
+                                <span>{{selectedHistory || 'Default History'}}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Input Files Summary -->
+                        <div class="review-section">
+                            <h5>Input Files</h5>
+                            <div class="review-item" ng-repeat="input in workflow.inputs">
+                                <label>{{input.name}}:</label>
+                                <span ng-if="inputFiles[input.id]">{{inputFiles[input.id].name}}</span>
+                                <span ng-if="!inputFiles[input.id]" class="text-danger">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    Not selected
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Parameters Summary -->
+                        <div class="review-section">
+                            <h5>Parameters</h5>
+                            <div class="review-item" ng-repeat="param in getAllParameters()">
+                                <label>{{param.name}}:</label>
+                                <span>{{getParameterValue(param)}}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Estimated Resources -->
+                        <div class="review-section">
+                            <h5>Estimated Resources</h5>
+                            <div class="resource-estimate">
+                                <div class="resource-item">
+                                    <i class="fas fa-clock me-2"></i>
+                                    <span>Estimated Time: {{estimatedTime || 'Unknown'}}</span>
+                                </div>
+                                <div class="resource-item">
+                                    <i class="fas fa-hdd me-2"></i>
+                                    <span>Estimated Storage: {{estimatedStorage || 'Unknown'}}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="step-navigation mt-4">
+                        <button class="btn btn-secondary" ng-click="previousStep()">
+                            <i class="fas fa-arrow-left me-1"></i> Previous
+                        </button>
+                        <button class="btn btn-success btn-lg float-end" 
+                                ng-click="startWorkflow()" 
+                                ng-disabled="!isReadyToRun()">
+                            <i class="fas fa-play me-1"></i>
+                            Start Workflow
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Execution Status -->
+        <div class="execution-status" ng-if="isRunning">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-spinner fa-spin me-2"></i>
+                        Running Workflow
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="execution-progress">
+                        <div class="progress mb-3">
+                            <div class="progress-bar" role="progressbar" 
+                                 ng-style="{width: executionProgress + '%'}">
+                                {{executionProgress}}%
+                            </div>
+                        </div>
+                        
+                        <div class="execution-steps">
+                            <div class="execution-step" 
+                                 ng-repeat="step in workflow.steps"
+                                 ng-class="getExecutionStepClass(step)">
+                                <div class="step-icon">
+                                    <i class="fas" ng-class="getExecutionStepIcon(step)"></i>
+                                </div>
+                                <div class="step-details">
+                                    <div class="step-name">{{step.name}}</div>
+                                    <div class="step-status">{{getExecutionStepStatus(step)}}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="execution-actions mt-4">
+                            <button class="btn btn-danger" ng-click="stopWorkflow()">
+                                <i class="fas fa-stop me-1"></i> Stop Workflow
+                            </button>
+                            <button class="btn btn-outline-secondary" ng-click="viewLogs()">
+                                <i class="fas fa-file-alt me-1"></i> View Logs
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" ng-if="!isLoading && !workflow">
+        <div class="text-center py-5">
+            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+            <h3>Workflow Not Found</h3>
+            <p class="text-muted">The requested workflow could not be found or may have been deleted.</p>
+            <button class="btn btn-primary" ng-click="cancelRun()">
+                <i class="fas fa-arrow-left me-1"></i>
+                Back to Workflows
+            </button>
+        </div>
+    </div>
 </div>
