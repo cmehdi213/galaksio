@@ -1,0 +1,263 @@
+<div class="container-fluid" ng-controller="PairedReadsController" ng-init="init()">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="fas fa-dna me-2"></i>
+                Paired Reads Manager
+            </h2>
+            
+            <!-- History Selection -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Select History</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <select class="form-select" ng-model="selectedHistory" ng-options="history as history.name for history in histories">
+                                <option value="">-- Select a history --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-primary w-100" ng-click="detectPairedReads()" 
+                                    ng-disabled="!selectedHistory || isLoading">
+                                <i class="fas fa-search me-2"></i>
+                                <span ng-if="!isLoading">Detect Paired Reads</span>
+                                <span ng-if="isLoading">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>
+                                    Detecting...
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <button class="btn btn-success" ng-click="autoPairAllReads()" 
+                                    ng-disabled="!selectedHistory || autoPairing">
+                                <i class="fas fa-magic me-2"></i>
+                                <span ng-if="!autoPairing">Auto-Pair All Reads</span>
+                                <span ng-if="autoPairing">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>
+                                    Auto-Pairing...
+                                </span>
+                            </button>
+                            <small class="text-muted ms-2">
+                                Automatically detects pairs and creates Galaxy collections
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Supported Patterns -->
+            <div class="card mb-4" ng-if="supportedPatterns.length > 0">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Supported Paired Read Patterns
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>File Extensions</h6>
+                            <div class="badge bg-secondary me-1 mb-1" ng-repeat="ext in supportedExtensions">
+                                {{ext}}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Pairing Patterns</h6>
+                            <div class="small" ng-repeat="pattern in supportedPatterns | limitTo:5">
+                                <code>{{pattern.pattern}}</code> → 
+                                <code>{{pattern.replacement}}</code>
+                            </div>
+                            <div class="text-muted mt-2" ng-if="supportedPatterns.length > 5">
+                                And {{supportedPatterns.length - 5}} more patterns...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Paired Reads Results -->
+            <div ng-if="pairedReads && pairedReads.success">
+                <!-- Summary -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Detection Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="stat-number">{{pairedReads.total_pairs}}</div>
+                                    <div class="stat-label">Paired Groups</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="stat-number">{{pairedReads.total_unpaired}}</div>
+                                    <div class="stat-label">Unpaired Files</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="stat-number">
+                                        {{(pairedReads.pairedGroups | filter:{confidence: '>=0.7'}).length}}
+                                    </div>
+                                    <div class="stat-label">High Confidence</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="stat-number">
+                                        {{(pairedReads.pairedGroups | filter:{confidence: '<0.7'}).length}}
+                                    </div>
+                                    <div class="stat-label">Low Confidence</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Paired Groups -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Detected Paired Groups</h5>
+                    </div>
+                    <div class="card-body">
+                        <div ng-if="pairedReads.pairedGroups.length === 0" class="text-center text-muted py-4">
+                            <i class="fas fa-search fa-3x mb-3"></i>
+                            <p>No paired groups detected</p>
+                        </div>
+                        
+                        <div class="row" ng-repeat="group in pairedReads.pairedGroups">
+                            <div class="col-12 mb-3">
+                                <div class="card" ng-class="{'border-success': group.confidence >= 0.7, 'border-warning': group.confidence < 0.7}">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-0">{{group.suggested_name}}</h6>
+                                            <small class="text-muted">
+                                                {{getPairTypeDescription(group.pair_type)}} • 
+                                                Confidence: {{(group.confidence * 100).toFixed(1)}}%
+                                            </small>
+                                        </div>
+                                        <div>
+                                            <span class="badge" 
+                                                  ng-class="getConfidenceLevel(group.confidence).class">
+                                                {{getConfidenceLevel(group.confidence).text}}
+                                            </span>
+                                            <button class="btn btn-sm btn-primary ms-2" 
+                                                    ng-click="createPairedCollection(group)"
+                                                    ng-disabled="!canCreateCollection(group)"
+                                                    ng-if="!group.collectionCreated">
+                                                <i class="fas fa-plus me-1"></i>
+                                                Create Collection
+                                                <i class="fas fa-spinner fa-spin ms-1" ng-if="group.creating"></i>
+                                            </button>
+                                            <span class="badge bg-success ms-2" ng-if="group.collectionCreated">
+                                                <i class="fas fa-check me-1"></i>
+                                                Collection Created
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6" ng-repeat="file in group.files">
+                                                <div class="file-info">
+                                                    <i class="fas fa-file me-2"></i>
+                                                    <strong>{{file.name}}</strong>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        {{formatFileSize(file.file_size)}} • 
+                                                        {{file.data_type}}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Unpaired Files -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Unpaired Files</h5>
+                    </div>
+                    <div class="card-body">
+                        <div ng-if="pairedReads.unpaired_files.length === 0" class="text-center text-muted py-4">
+                            <i class="fas fa-check-circle fa-3x mb-3"></i>
+                            <p>All files were successfully paired!</p>
+                        </div>
+                        
+                        <div class="row" ng-if="pairedReads.unpaired_files.length > 0">
+                            <div class="col-md-4 mb-3" ng-repeat="file in pairedReads.unpaired_files">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{file.name}}</h6>
+                                        <p class="card-text">
+                                            <small class="text-muted">
+                                                {{formatFileSize(file.file_size)}} • 
+                                                {{file.data_type}}
+                                            </small>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Loading State -->
+            <div ng-if="isLoading" class="text-center py-5">
+                <i class="fas fa-spinner fa-spin fa-3x mb-3"></i>
+                <p>Detecting paired reads...</p>
+            </div>
+            
+            <!-- No Results State -->
+            <div ng-if="!pairedReads && !isLoading" class="text-center py-5">
+                <i class="fas fa-dna fa-3x mb-3 text-muted"></i>
+                <p class="text-muted">Select a history and click "Detect Paired Reads" to begin</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stat-card {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.file-info {
+    padding: 0.5rem;
+    border-left: 3px solid #007bff;
+    margin-bottom: 0.5rem;
+}
+
+.border-success {
+    border-width: 2px !important;
+}
+
+.border-warning {
+    border-width: 2px !important;
+}
+</style>
