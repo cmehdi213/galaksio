@@ -85,12 +85,23 @@ class WorkflowTracker:
                 logger.error(f"Error updating workflow {invocation_id}: {e}")
     
     def _update_single_workflow(self, invocation_id: str):
-        """Update state of a single workflow execution."""
-        try:
-            # Get invocation details from Galaxy
-            invocation = self.gi.invocations.show_invocation(invocation_id)
-            workflow_state = invocation.get('state', 'unknown')
-            
+    """Update state of a single workflow execution."""
+    try:
+        # Add rate limiting handling
+        max_retries = 3
+        retry_delay = 1
+        
+        for attempt in range(max_retries):
+            try:
+                invocation = self.gi.invocations.show_invocation(invocation_id)
+                break
+            except Exception as e:
+                if "429" in str(e) and attempt < max_retries - 1:  # Rate limit
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
+                    continue
+                raise
+          
             with self.lock:
                 if invocation_id in self.active_workflows:
                     workflow_info = self.active_workflows[invocation_id]
