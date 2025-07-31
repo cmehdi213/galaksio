@@ -13,181 +13,268 @@
 * Lesser General Public License for more details.
 *
 * Contributors:
-*     Rafael Hernandez de Diego <rafahdediego@gmail.com>
-*     Tomas Klingström
-*     Erik Bongcam-Rudloff
-*     and others.
+* Rafael Hernandez de Diego
+* Tomas Klingstrom
+* Erik Bongcam-Rudloff
+* and others.
 *
-* THIS FILE CONTAINS THE FOLLOWING MODULE DECLARATION
-* - UserSessionController
-*
+* Modernized for responsive design and enhanced UX
 */
-(function(){
-	var app = angular.module('users.controllers.user-session', [
-		'ang-dialogs',
-		'ui.router',
-	]);
 
-	app.controller('UserSessionController', function ($state, $rootScope, $scope, $http, $dialogs, APP_EVENTS) {
-		//--------------------------------------------------------------------
-		// CONTROLLER FUNCTIONS
-		//--------------------------------------------------------------------
-		this.getCurrentUserDetails = function(){
-			if(!Cookies.get("galaxyuser")){
-				return;
-			}
+(function() {
+    'use strict';
 
-			$http($rootScope.getHttpRequestConfig("GET", "user-info", {
-				headers: {'Content-Type': 'application/json; charset=utf-8'},
-				extra: "current"
-			})).then(
-				function successCallback(response){
-					$scope.userInfo.email = response.data.email;
-					$scope.userInfo.username = response.data.username;
-					$scope.userInfo.disk_usage = response.data.nice_total_disk_usage;
-					Cookies.remove("galaxyusername", {path: getPathname()});
-					Cookies.set("galaxyusername", $scope.userInfo.username, {expires : 1, path: getPathname()});
-					Cookies.remove("galaxyuser", {path: getPathname()});
-					Cookies.set("galaxyuser", $scope.userInfo.email, {expires : 1, path: getPathname()});
-				},
-				function errorCallback(response){
-					if(Cookies.get("galaksiosession") === undefined){
-						return;
-					}
+    var app = angular.module('users.controllers.user-session', [
+        'ang-dialogs',
+        'ui.router',
+    ]);
 
-					var message = "Failed while getting user's details at UserSessionController:signInButtonHandler";
-					console.error(message);
-					console.error(response.data);
-				}
-			);
-		};
+    app.controller('UserSessionController', [
+        '$state', '$rootScope', '$scope', '$http', '$timeout', '$dialogs', 'APP_EVENTS',
+        function($state, $rootScope, $scope, $http, $timeout, $dialogs, APP_EVENTS) {
+            
+            var vm = this;
+            
+            // Initialize scope variables
+            $scope.isLogin = true;
+            $scope.userInfo = {
+                email: Cookies.get("galaxyuser") || '',
+                username: '',
+                password: '',
+                passconfirm: ''
+            };
+            $scope.isLoading = false;
 
-		//--------------------------------------------------------------------
-		// EVENT HANDLERS
-		//--------------------------------------------------------------------
-		$scope.$on(APP_EVENTS.loginSuccess, function (event, args) {
-			$scope.userInfo.email = Cookies.get("galaxyuser");
-		});
+            //--------------------------------------------------------------------
+            // CONTROLLER FUNCTIONS
+            //--------------------------------------------------------------------
 
-		$scope.$on(APP_EVENTS.logoutSuccess, function (event, args) {
-			delete $scope.userInfo.email;
-		});
+            /**
+             * Get current user details from Galaxy
+             */
+            this.getCurrentUserDetails = function() {
+                if (!Cookies.get("galaxyuser")) {
+                    return;
+                }
 
-		$scope.$on(APP_EVENTS.logoutRequired, function (event, args) {
-			debugger
-			me.signOutButtonHandler();
-		});
+                $scope.isLoading = true;
+                
+                $http($rootScope.getHttpRequestConfig("GET", "user-info", {
+                    headers: {'Content-Type': 'application/json; charset=utf-8'},
+                    extra: "current"
+                }))
+                .then(
+                    function successCallback(response) {
+                        $scope.userInfo.email = response.data.email;
+                        $scope.userInfo.username = response.data.username;
+                        $scope.userInfo.disk_usage = response.data.nice_total_disk_usage;
+                        
+                        // Update cookies
+                        Cookies.remove("galaxyusername", {path: getPathname()});
+                        Cookies.set("galaxyusername", $scope.userInfo.username, {
+                            expires: 1, 
+                            path: getPathname()
+                        });
+                        Cookies.remove("galaxyuser", {path: getPathname()});
+                        Cookies.set("galaxyuser", $scope.userInfo.email, {
+                            expires: 1, 
+                            path: getPathname()
+                        });
+                        
+                        $scope.isLoading = false;
+                    },
+                    function errorCallback(response) {
+                        if (Cookies.get("galaksiosession") === undefined) {
+                            return;
+                        }
+                        
+                        console.error("Failed while getting user's details at UserSessionController:signInButtonHandler");
+                        console.error(response.data);
+                        $scope.isLoading = false;
+                    }
+                );
+            };
 
-		this.signFormSubmitHandler = function () {
-			if($scope.isLogin){
-				this.signInButtonHandler();
-			}else{
-				this.signUpButtonHandler();
-			}
-		};
+            //--------------------------------------------------------------------
+            // EVENT HANDLERS
+            //--------------------------------------------------------------------
 
-		this.signInButtonHandler = function () {
-			if ( $scope.userInfo.email !== '' && $scope.userInfo.password !== '') {
-				$http($rootScope.getHttpRequestConfig("GET","user-sign-in",{
-					headers: {"Authorization": "Basic " + btoa($scope.userInfo.email + ":" + $scope.userInfo.password)}}
-				)).then(
-					function successCallback(response){
-						//CLEAN PREVIOUS COOKIES
-						Cookies.remove("galaxyuser", {path: getPathname()});
-						Cookies.remove("galaksiosession", {path: getPathname()});
-						Cookies.remove("current-history", {path: getPathname()});
+            $scope.$on(APP_EVENTS.loginSuccess, function(event, args) {
+                $scope.userInfo.email = Cookies.get("galaxyuser");
+                vm.getCurrentUserDetails();
+            });
 
-						//SET THE COOKIES
-						Cookies.set("galaxyuser", $scope.userInfo.email, {expires : 1, path: getPathname()});
-						Cookies.set("galaksiosession", btoa(response.data.api_key), {expires : 1, path: getPathname()});
+            $scope.$on(APP_EVENTS.logoutSuccess, function(event, args) {
+                delete $scope.userInfo.email;
+            });
 
-						$scope.userInfo.email = Cookies.get("galaxyuser");
-						delete $scope.userInfo.password
-						delete $scope.signForm
+            $scope.$on(APP_EVENTS.logoutRequired, function(event, args) {
+                vm.signOutButtonHandler();
+            });
 
-						//Notify all the other controllers that user has signed in
-						$rootScope.$broadcast(APP_EVENTS.loginSuccess);
+            //--------------------------------------------------------------------
+            // FORM HANDLERS
+            //--------------------------------------------------------------------
 
-						$state.go('home');
-					},
-					function errorCallback(response){
-						if(response.data && [404001, 401001].indexOf(response.data.err_code) !== -1){
-							$dialogs.showErrorDialog("Invalid user or password.");
-							return;
-						}
+            /**
+             * Handle form submission (sign in or sign up)
+             */
+            this.signFormSubmitHandler = function() {
+                if ($scope.isLogin) {
+                    this.signInButtonHandler();
+                } else {
+                    this.signUpButtonHandler();
+                }
+            };
 
-						debugger;
-						var message = "Failed during sign-in process.";
-						$dialogs.showErrorDialog(message, {
-							logMessage : message + " at UserSessionController:signInButtonHandler."
-						});
-						console.error(response.data);
-					}
-				);
-			};
-		};
+            /**
+             * Handle sign in process
+             */
+            this.signInButtonHandler = function() {
+                if (!$scope.userInfo.email || !$scope.userInfo.password) {
+                    return;
+                }
 
-		this.signUpButtonHandler = function () {
-			if ( $scope.userInfo.email !== '' && $scope.userInfo.username !== '' && $scope.userInfo.password !== '' && $scope.userInfo.password == $scope.userInfo.passconfirm ) {
-				$http($rootScope.getHttpRequestConfig("POST","user-sign-up",{
-					headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-					urlEncodedRequest: true,
-					data: {
-						email : $scope.userInfo.email,
-						username : $scope.userInfo.username,
-						password : $scope.userInfo.password,
-						confirm : $scope.userInfo.password,
-						create_user_button:"Submit"
-					}}
-				)).then(
-					function successCallback(response){
-						response = $(response.data).find(".errormessage").text();
+                $scope.isLoading = true;
 
-						if(response === undefined || response === "" ){
-							$dialogs.showSuccessDialog("Your account has been created!");
-							$scope.isLogin=true;
-						}else{
-							$dialogs.showErrorDialog("Failed when creating new account: " + response);
-						}
+                $http($rootScope.getHttpRequestConfig("GET", "user-sign-in", {
+                    headers: {
+                        "Authorization": "Basic " + btoa($scope.userInfo.email + ":" + $scope.userInfo.password)
+                    }
+                }))
+                .then(
+                    function successCallback(response) {
+                        // Clean previous cookies
+                        Cookies.remove("galaxyuser", {path: getPathname()});
+                        Cookies.remove("galaksiosession", {path: getPathname()});
+                        Cookies.remove("current-history", {path: getPathname()});
 
-						delete $scope.userInfo.password
-						delete $scope.userInfo.passconfirm
-						delete $scope.signForm
-					},
-					function errorCallback(response){
-						debugger;
-						var message = "Failed during sign-up process.";
-						$dialogs.showErrorDialog(message, {
-							logMessage : message + " at UserSessionController:signUpButtonHandler."
-						});
-						console.error(response.data);
-					}
-				);
-			};
-		};
+                        // Set new cookies
+                        Cookies.set("galaxyuser", $scope.userInfo.email, {
+                            expires: 1, 
+                            path: getPathname()
+                        });
+                        Cookies.set("galaksiosession", btoa(response.data.api_key), {
+                            expires: 1, 
+                            path: getPathname()
+                        });
 
-		this.signOutButtonHandler = function () {
-			Cookies.remove("galaxyuser", {path: getPathname()});
-			Cookies.remove("galaksiosession", {path: getPathname()});
-			Cookies.remove("current-history", {path: getPathname()});
-			Cookies.remove("galaxyusername", {path: getPathname()});
-			sessionStorage.removeItem("workflow_invocations");
-			delete $scope.userInfo.email;
-			location.replace(getPathname().replace(/\/$/g, "") + "/#/signin?_=" + (new Date()).getTime());
-			location.reload();
+                        $scope.userInfo.email = Cookies.get("galaxyuser");
+                        delete $scope.userInfo.password;
+                        delete $scope.signForm;
 
-			//Notify all the other controllers that user has signed in
-			//$rootScope.$broadcast(APP_EVENTS.logoutSuccess);
-		};
+                        // Notify all controllers that user has signed in
+                        $rootScope.$broadcast(APP_EVENTS.loginSuccess);
+                        
+                        // Show success message
+                        $dialogs.showSuccessDialog("Successfully signed in!");
+                        
+                        // Navigate to home
+                        $timeout(function() {
+                            $state.go('home');
+                        }, 1000);
+                        
+                        $scope.isLoading = false;
+                    },
+                    function errorCallback(response) {
+                        $scope.isLoading = false;
+                        
+                        if (response.data && [404001, 401001].indexOf(response.data.err_code) !== -1) {
+                            $dialogs.showErrorDialog("Invalid email or password.");
+                            return;
+                        }
+                        
+                        var message = "Failed during sign-in process.";
+                        $dialogs.showErrorDialog(message, {
+                            logMessage: message + " at UserSessionController:signInButtonHandler."
+                        });
+                        console.error(response.data);
+                    }
+                );
+            };
 
-		//--------------------------------------------------------------------
-		// INITIALIZATION
-		//--------------------------------------------------------------------
-		var me = this;
-		$scope.userInfo = {
-			email : Cookies.get("galaxyuser")
-		};
-		this.getCurrentUserDetails();
-	}
-);
+            /**
+             * Handle sign up process
+             */
+            this.signUpButtonHandler = function() {
+                if (!$scope.userInfo.email || !$scope.userInfo.username || 
+                    !$scope.userInfo.password || $scope.userInfo.password !== $scope.userInfo.passconfirm) {
+                    return;
+                }
+
+                $scope.isLoading = true;
+
+                $http($rootScope.getHttpRequestConfig("POST", "user-sign-up", {
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    urlEncodedRequest: true,
+                    data: {
+                        email: $scope.userInfo.email,
+                        username: $scope.userInfo.username,
+                        password: $scope.userInfo.password,
+                        confirm: $scope.userInfo.password,
+                        create_user_button: "Submit"
+                    }
+                }))
+                .then(
+                    function successCallback(response) {
+                        // Parse response for errors
+                        var parser = new DOMParser();
+                        var doc = parser.parseFromString(response.data, 'text/html');
+                        var errorMessage = doc.querySelector('.errormessage');
+                        
+                        if (!errorMessage || errorMessage.textContent.trim() === '') {
+                            $dialogs.showSuccessDialog("Your account has been created successfully!");
+                            $scope.isLogin = true;
+                        } else {
+                            $dialogs.showErrorDialog("Failed when creating new account: " + errorMessage.textContent);
+                        }
+                        
+                        delete $scope.userInfo.password;
+                        delete $scope.userInfo.passconfirm;
+                        delete $scope.signForm;
+                        
+                        $scope.isLoading = false;
+                    },
+                    function errorCallback(response) {
+                        $scope.isLoading = false;
+                        
+                        var message = "Failed during sign-up process.";
+                        $dialogs.showErrorDialog(message, {
+                            logMessage: message + " at UserSessionController:signUpButtonHandler."
+                        });
+                        console.error(response.data);
+                    }
+                );
+            };
+
+            /**
+             * Handle sign out process
+             */
+            this.signOutButtonHandler = function() {
+                // Clean all cookies
+                Cookies.remove("galaxyuser", {path: getPathname()});
+                Cookies.remove("galaksiosession", {path: getPathname()});
+                Cookies.remove("current-history", {path: getPathname()});
+                Cookies.remove("galaxyusername", {path: getPathname()});
+                
+                // Clean session storage
+                sessionStorage.removeItem("workflow_invocations");
+                
+                // Clear user info
+                delete $scope.userInfo.email;
+                
+                // Redirect to sign in page
+                var redirectUrl = getPathname().replace(/\/$/g, "") + "/#/signin?_=" + (new Date()).getTime();
+                location.replace(redirectUrl);
+                location.reload();
+            };
+
+            //--------------------------------------------------------------------
+            // INITIALIZATION
+            //--------------------------------------------------------------------
+
+            // Get current user details on initialization
+            this.getCurrentUserDetails();
+        }
+    ]);
 })();
