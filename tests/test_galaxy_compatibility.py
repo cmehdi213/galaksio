@@ -28,11 +28,18 @@ class TestGalaxyCompatibility(unittest.TestCase):
         
     def test_verifier_initialization(self):
         """Test Galaxy API verifier initialization."""
-        with patch.object(self.mock_galaxy_instance, 'config') as mock_config:
+        with patch.object(self.mock_galaxy_instance, 'config') as mock_config, \
+             patch.object(self.mock_galaxy_instance, 'workflows') as mock_workflows, \
+             patch.object(self.mock_galaxy_instance, 'invocations') as mock_invocations, \
+             patch.object(self.mock_galaxy_instance, 'histories') as mock_histories:
             mock_config.get_version.return_value = {
                 'version_major': '25.0',
                 'api_version': 'v2'
             }
+            mock_workflows.get_workflows.return_value = []
+            mock_invocations.get_invocations.return_value = []
+            mock_histories.get_histories.return_value = []
+            mock_histories.show_history.return_value = []
             
             verifier = GalaxyAPIVerifier(self.mock_galaxy_instance)
             
@@ -69,7 +76,7 @@ class TestGalaxyCompatibility(unittest.TestCase):
             mock_histories.get_histories.return_value = [
                 {'id': 'test_history', 'name': 'Test History'}
             ]
-            mock_histories.show_history.return_value = []
+            mock_histories.show_history.return_value = [{'id': 'd1', 'name': 'd1'}]
             
             verifier = GalaxyAPIVerifier(self.mock_galaxy_instance)
             
@@ -81,6 +88,7 @@ class TestGalaxyCompatibility(unittest.TestCase):
         """Test compatibility with older Galaxy versions."""
         with patch.object(self.mock_galaxy_instance, 'config') as mock_config, \
              patch.object(self.mock_galaxy_instance, 'workflows') as mock_workflows, \
+             patch.object(self.mock_galaxy_instance, 'invocations') as mock_invocations, \
              patch.object(self.mock_galaxy_instance, 'histories') as mock_histories:
             
             # Mock older version info
@@ -98,10 +106,12 @@ class TestGalaxyCompatibility(unittest.TestCase):
                 'inputs': {'input1': {'type': 'data'}}
             }
             
+            mock_invocations.get_invocations.return_value = []
+
             mock_histories.get_histories.return_value = [
                 {'id': 'test_history', 'name': 'Test History'}
             ]
-            mock_histories.show_history.return_value = []
+            mock_histories.show_history.return_value = [{'id': 'd1', 'name': 'd1'}]
             
             verifier = GalaxyAPIVerifier(self.mock_galaxy_instance)
             
@@ -111,11 +121,18 @@ class TestGalaxyCompatibility(unittest.TestCase):
     
     def test_workflow_invocation_compatibility(self):
         """Test workflow invocation compatibility."""
-        with patch.object(self.mock_galaxy_instance, 'config') as mock_config:
+        with patch.object(self.mock_galaxy_instance, 'config') as mock_config, \
+             patch.object(self.mock_galaxy_instance, 'workflows') as mock_workflows, \
+             patch.object(self.mock_galaxy_instance, 'invocations') as mock_invocations, \
+             patch.object(self.mock_galaxy_instance, 'histories') as mock_histories:
             mock_config.get_version.return_value = {
                 'version_major': '25.0',
                 'api_version': 'v2'
             }
+            mock_workflows.get_workflows.return_value = []
+            mock_invocations.get_invocations.return_value = []
+            mock_histories.get_histories.return_value = []
+            mock_histories.show_history.return_value = []
             
             verifier = GalaxyAPIVerifier(self.mock_galaxy_instance)
             
@@ -141,11 +158,18 @@ class TestGalaxyCompatibility(unittest.TestCase):
     
     def test_collection_creation_compatibility(self):
         """Test collection creation compatibility."""
-        with patch.object(self.mock_galaxy_instance, 'config') as mock_config:
+        with patch.object(self.mock_galaxy_instance, 'config') as mock_config, \
+             patch.object(self.mock_galaxy_instance, 'workflows') as mock_workflows, \
+             patch.object(self.mock_galaxy_instance, 'invocations') as mock_invocations, \
+             patch.object(self.mock_galaxy_instance, 'histories') as mock_histories:
             mock_config.get_version.return_value = {
                 'version_major': '25.0',
                 'api_version': 'v2'
             }
+            mock_workflows.get_workflows.return_value = []
+            mock_invocations.get_invocations.return_value = []
+            mock_histories.get_histories.return_value = []
+            mock_histories.show_history.return_value = []
             
             verifier = GalaxyAPIVerifier(self.mock_galaxy_instance)
             
@@ -169,11 +193,17 @@ class TestGalaxyCompatibility(unittest.TestCase):
     
     def test_history_contents_compatibility(self):
         """Test history contents retrieval compatibility."""
-        with patch.object(self.mock_galaxy_instance, 'config') as mock_config:
+        with patch.object(self.mock_galaxy_instance, 'config') as mock_config, \
+             patch.object(self.mock_galaxy_instance, 'workflows') as mock_workflows, \
+             patch.object(self.mock_galaxy_instance, 'invocations') as mock_invocations, \
+             patch.object(self.mock_galaxy_instance, 'histories') as mock_histories:
             mock_config.get_version.return_value = {
                 'version_major': '25.0',
                 'api_version': 'v2'
             }
+            mock_workflows.get_workflows.return_value = []
+            mock_invocations.get_invocations.return_value = []
+            mock_histories.get_histories.return_value = []
             
             verifier = GalaxyAPIVerifier(self.mock_galaxy_instance)
             

@@ -81,7 +81,11 @@ class RateLimiter:
         ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', 'unknown'))
         
         # Try to get API key if available
-        api_key = request.headers.get('X-API-Key') or request.json.get('key') if request.json else None
+        auth_header = request.headers.get('Authorization')
+        if auth_header and auth_header.startswith('Bearer '):
+            api_key = auth_header.split(' ')[1]
+        else:
+            api_key = request.headers.get('X-API-Key') or request.json.get('key') if request.json else None
         
         # Try to get user agent
         user_agent = request.headers.get('User-Agent', 'unknown')

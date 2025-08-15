@@ -1,0 +1,23 @@
+2025-08-15 10:26:42,749 - server.server - INFO - Galaksio Server initialized with enhanced security features
+2025-08-15 10:26:42,764 - server.server - INFO - All routes configured successfully
+2025-08-15 10:26:42,765 - server.server - INFO - Background tasks started
+2025-08-15 10:26:42,769 - server.server - INFO - Galaksio Server initialized with enhanced security features
+2025-08-15 10:26:42,785 - server.server - INFO - All routes configured successfully
+2025-08-15 10:26:42,786 - server.server - INFO - Background tasks started
+2025-08-15 10:26:42,786 - server.server - INFO - Starting Galaksio Server on 0.0.0.0:8081
+2025-08-15 10:26:42,786 - server.server - INFO - Galaxy server: https://usegalaxy.org/
+2025-08-15 10:26:42,786 - server.server - INFO - Debug mode: False
+2025-08-15 10:27:42,670 - server.server - INFO - Galaksio Server initialized with enhanced security features
+2025-08-15 10:27:42,681 - server.server - INFO - All routes configured successfully
+2025-08-15 10:27:42,682 - server.server - INFO - Background tasks started
+2025-08-15 10:27:42,685 - server.server - INFO - Galaksio Server initialized with enhanced security features
+2025-08-15 10:27:42,699 - server.server - INFO - All routes configured successfully
+2025-08-15 10:27:42,700 - server.server - INFO - Background tasks started
+2025-08-15 10:27:42,700 - server.server - INFO - Starting Galaksio Server on 0.0.0.0:8081
+2025-08-15 10:27:42,700 - server.server - INFO - Galaxy server: https://usegalaxy.org/
+2025-08-15 10:27:42,700 - server.server - INFO - Debug mode: False
+2025-08-15 10:27:42,705 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8081
+ * Running on http://192.168.0.2:8081
+2025-08-15 10:27:42,705 - werkzeug - INFO - [33mPress CTRL+C to quit[0m

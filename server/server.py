@@ -117,7 +117,7 @@ class GalaksioServer:
                      'default-src': "'self'",
                      'script-src': "'self' 'unsafe-inline' 'unsafe-eval'",
                      'style-src': "'self' 'unsafe-inline'",
-                     'img-src': "'self' data: https:',
+                     'img-src': "'self' data: https:",
                      'font-src': "'self' data:",
                      'connect-src': "'self' *",  # Allow connections to Galaxy instances
                  })
@@ -576,26 +576,3 @@ server = GalaksioServer()
 
 # Expose the Flask app for WSGI deployment
 app = server.app
-
-if __name__ == '__main__':
-    # Command line argument parsing
-    import argparse
-    
-    parser = argparse.ArgumentParser(description='Galaksio Server')
-    parser.add_argument('--host', default=settings.HOST, help='Host to bind to')
-    parser.add_argument('--port', type=int, default=settings.PORT, help='Port to bind to')
-    parser.add_argument('--debug', action='store_true', help='Enable debug mode')
-    parser.add_argument('--start', action='store_true', help='Start the server')
-    
-    args = parser.parse_args()
-    
-    if args.start:
-        server.run(
-            host=args.host,
-            port=args.port,
-            debug=args.debug
-        )
-    else:
-        print("Galaksio Server")
-        print("Use --start to start the server")
-        print("Use --help for more options")

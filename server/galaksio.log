@@ -1,5 +1,1 @@
 Starting Galaksio server...
-Traceback (most recent call last):
-  File "/app/server/launch_server.py", line 4, in <module>
-    from .server import Application
-ImportError: attempted relative import with no known parent package

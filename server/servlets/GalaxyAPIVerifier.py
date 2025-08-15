@@ -20,6 +20,7 @@ class GalaxyAPIVerifier:
         self.gi_objects = GalaxyInstanceObjects(galaxy_instance.url, galaxy_instance.key)
         self.galaxy_version = None
         self.api_version = None
+        self.is_galaxy_25_plus = False
         self.compatibility_issues = []
         
         # Verify Galaxy version and API compatibility
@@ -38,6 +39,7 @@ class GalaxyAPIVerifier:
             
             # Check if this is Galaxy 25.0+
             if self.galaxy_version and self.galaxy_version.startswith('25.'):
+                self.is_galaxy_25_plus = True
                 logger.info("Galaxy 25.0+ detected - applying compatibility checks")
             else:
                 logger.warning(f"Galaxy {self.galaxy_version} detected - some features may not be available")
@@ -68,6 +70,7 @@ class GalaxyAPIVerifier:
     def _check_workflows_endpoint(self):
         """Check workflows API endpoint compatibility."""
         # Test getting workflows
+        print(f"DEBUG: type of self.gi.workflows.get_workflows() is {type(self.gi.workflows.get_workflows())}")
         workflows = self.gi.workflows.get_workflows()
         if not isinstance(workflows, list):
             raise ValueError(f"Expected list of workflows, got {type(workflows)}")

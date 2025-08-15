@@ -32,8 +32,9 @@ mkdir -p ../log
 mkdir -p ../tmp
 
 # Set environment variables
-export PYTHONPATH=$PYTHONPATH:$(pwd)
+export PYTHONPATH=$PYTHONPATH:$(pwd)/..
 
 # Start the server
 echo "Starting Galaksio server..."
-$PYTHON_CMD launch_server.py "$@"
+cd ..
+$PYTHON_CMD -m server.launch_server "$@"

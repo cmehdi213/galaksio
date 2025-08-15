@@ -10,3 +10,4 @@ server/conf/server.cfg_back
 server/launch_server.pid
 venv/
 *.egg-info/
+client/node_modules/
