@@ -122,6 +122,13 @@
                     url: '/admin',
                     templateUrl: "app/admin/admin-page.tpl.html",
                     data: {requireLogin: false, title: 'Admin'}
+                },
+                'paired-reads': {
+                    name: 'paired-reads',
+                    url: '/paired-reads',
+                    templateUrl: 'app/paired-reads.html',
+                    controller: 'PairedReadsController',
+                    data: {requireLogin: true, title: 'Paired Reads'}
                 }
             };
 
@@ -439,23 +446,6 @@
         }
     ]);
 
-    // Add this to your app.js routing configuration
-angular.module('galaksio').config(['$routeProvider', function($routeProvider) {
-    $routeProvider
-        .when('/paired-reads', {
-            templateUrl: 'app/paired-reads.html',
-            controller: 'PairedReadsController',
-            resolve: {
-                // Add any necessary resolves
-            }
-        })
-        // ... other routes
-}]);
-
-// Include the new files in your index.html
-<script src="app/paired-reads-service.js"></script>
-<script src="app/paired-reads-controller.js"></script>
- 
     // Utility functions
     function getPathname() {
         var pathname = window.location.pathname;

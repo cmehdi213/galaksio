@@ -1,0 +1,138 @@
+Metadata-Version: 2.4
+Name: galaksio
+Version: 0.4.0
+Summary: A modern, responsive web interface for running Galaxy workflows
+Home-page: https://github.com/cmehdi213/galaksio
+Author: Original: SGBC, Updated: cmehdi213
+Author-email: "Original: SGBC" <original@example.com>, "Updated: cmehdi213" <cmehdi213@example.com>
+Maintainer-email: cmehdi213 <cmehdi213@example.com>
+License: GPL-3.0
+Project-URL: Homepage, https://github.com/cmehdi213/galaksio
+Project-URL: Repository, https://github.com/cmehdi213/galaksio
+Project-URL: Documentation, https://galaksio.readthedocs.io/
+Project-URL: Bug Reports, https://github.com/cmehdi213/galaksio/issues
+Keywords: galaxy,bioinformatics,workflows,web-interface
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: GNU General Public License v3 (GPLv3)
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Topic :: Scientific/Engineering :: Bio-Informatics
+Classifier: Topic :: Internet :: WWW/HTTP :: Dynamic Content
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: bioblend==1.6.0
+Requires-Dist: flask==3.0.0
+Requires-Dist: requests==2.31.0
+Requires-Dist: fpdf==1.7.2
+Requires-Dist: fpdf2==2.7.6
+Requires-Dist: python-dateutil==2.8.2
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.0.0; extra == "dev"
+Requires-Dist: black>=22.0.0; extra == "dev"
+Requires-Dist: flake8>=5.0.0; extra == "dev"
+Requires-Dist: mypy>=1.0.0; extra == "dev"
+Requires-Dist: pre-commit>=3.0.0; extra == "dev"
+Provides-Extra: docker
+Requires-Dist: docker>=6.0.0; extra == "docker"
+Dynamic: author
+Dynamic: home-page
+Dynamic: license-file
+Dynamic: requires-python
+
+# Galaksio 2 - Modern Galaxy Simplified Interface
+
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Galaxy 25.0](https://img.shields.io/badge/Galaxy-25.0-brightgreen.svg)](https://docs.galaxyproject.org/en/latest/)
+[![Docker](https://img.shields.io/badge/Docker-ready-blue.svg)](https://hub.docker.com/)
+
+> A modern, responsive web interface for running Galaxy workflows with enhanced user experience and accessibility.
+
+## 🌟 What's New in Version 0.4.0
+
+### 🎨 Modern Web Design
+- **Fully Responsive Interface**: Works seamlessly on desktop, tablet, and mobile devices
+- **Mobile-First Design**: Touch-friendly interface with bottom navigation for mobile users
+- **Modern UI Components**: Card-based layouts, smooth animations, and intuitive navigation
+- **Enhanced Accessibility**: Full keyboard navigation, screen reader support, and ARIA labels
+- **Dark Mode Support**: Automatic dark mode based on system preferences
+- **Progressive Web App**: PWA capabilities for offline functionality and app-like experience
+
+### 🚀 Performance & Compatibility
+- **Galaxy 25.0 Ready**: Full compatibility with the latest Galaxy Project version
+- **Python 3.9+ Support**: Updated to use modern Python versions (dropped Python 3.8 support)
+- **BioBlend 1.6.0 Integration**: Updated to latest BioBlend for enhanced API compatibility
+- **Optimized Loading**: Fast loading times with lazy loading and optimized assets
+- **Enhanced Security**: Modern security practices, CORS support, and secure session management
+
+### 💡 User Experience Improvements
+- **Interactive Dashboard**: Real-time statistics and system monitoring
+- **Advanced Search & Filtering**: Powerful search capabilities with tag-based filtering
+- **Toast Notifications**: Modern notification system instead of intrusive alerts
+- **Loading States**: Beautiful loading indicators and empty states
+- **Quick Actions**: Fast access to common workflow operations
+- **Workflow Cards**: Visual workflow representation with metadata and statistics
+
+### 🔧 Technical Enhancements
+- **Enhanced Authentication**: Improved Galaxy API authentication with better error handling
+- **Real-time Workflow Tracking**: Live workflow execution status with progress monitoring
+- **Chunked File Uploads**: Support for large file uploads with progress tracking
+- **Comprehensive Error Handling**: User-friendly error messages with actionable suggestions
+- **Modern Security Headers**: CORS, CSP, and security headers for modern browsers
+- **Background Cleanup**: Automatic cleanup of old workflows and uploads
+- **Health Monitoring**: Built-in health checks and system monitoring
+
+### 🧬 **NEW: Paired Reads Management**
+- **Automatic Paired-End Detection**: Intelligent detection of paired-end sequencing reads
+- **Multi-Platform Support**: Supports Illumina, PacBio, Oxford Nanopore, and other sequencing platforms
+- **Confidence Scoring**: Advanced algorithms to rate pairing confidence and avoid false positives
+- **One-Click Auto-Pairing**: Automatically detect and pair all reads in a Galaxy history
+- **Galaxy Collection Integration**: Seamlessly create Galaxy dataset collections from paired reads
+- **Pattern Recognition**: Supports multiple naming conventions (R1/R2, _1/_2, forward/reverse, etc.)
+- **Visual Interface**: Intuitive web interface for reviewing and managing paired reads
+- **Batch Processing**: Process entire histories with comprehensive summary statistics
+
+## 📸 Screenshots
+
+### Desktop Interface
+![Desktop Interface](https://raw.githubusercontent.com/cmehdi213/galaksio/master/docs/screenshots/desktop.png)
+*Modern desktop interface with sidebar navigation and workflow cards*
+
+### Mobile Interface
+![Mobile Interface](https://raw.githubusercontent.com/cmehdi213/galaksio/master/docs/screenshots/mobile.png)
+*Responsive mobile design with bottom navigation and touch-friendly controls*
+
+### Installation Wizard
+![Installation Wizard](https://raw.githubusercontent.com/cmehdi213/galaksio/master/docs/screenshots/wizard.png)
+*Step-by-step installation wizard with progress indicators*
+
+### **NEW: Paired Reads Manager**
+![Paired Reads Manager](https://raw.githubusercontent.com/cmehdi213/galaksio/master/docs/screenshots/paired-reads.png)
+*Automatic paired-end read detection and management interface*
+
+## 🚀 Quick Start
+
+### Prerequisites
+- **Python**: 3.9 or later
+- **Node.js**: 16+ (for development)
+- **Docker**: 20+ (optional, for containerized deployment)
+- **Modern Browser**: Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
+
+### Installation
+
+#### Option 1: Standard Installation
+1. **Install system dependencies**:
+```bash
+# For Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install -y python3 python3-pip git build-essential
+
+# For CentOS/RHEL
+sudo yum install -y python3 python3-pip git gcc

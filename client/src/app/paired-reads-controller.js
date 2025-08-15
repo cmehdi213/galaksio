@@ -3,7 +3,7 @@
  * Manages the paired-end reads detection and management interface
  */
 
-angular.module('galaksio').controller('PairedReadsController', [
+angular.module('b3galaxyApp').controller('PairedReadsController', [
     '$scope', '$timeout', '$interval', 'PairedReadsService', 'HistoryService', 'NotificationService',
     function($scope, $timeout, $interval, PairedReadsService, HistoryService, NotificationService) {
         

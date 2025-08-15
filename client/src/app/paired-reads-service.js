@@ -3,7 +3,7 @@
  * Handles automatic detection and management of paired-end sequencing reads
  */
 
-angular.module('galaksio').factory('PairedReadsService', ['$http', '$q', function($http, $q) {
+angular.module('b3galaxyApp').factory('PairedReadsService', ['$http', '$q', function($http, $q) {
     return {
         /**
          * Detect paired-end reads in a Galaxy history

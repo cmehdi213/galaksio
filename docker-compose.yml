@@ -28,33 +28,33 @@ services:
       - galaksio-network
 
   # Optional: Redis for session management and caching
-  redis:
-    image: redis:7-alpine
-    container_name: galaksio-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    restart: unless-stopped
-    command: redis-server --appendonly yes
-    networks:
-      - galaksio-network
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: galaksio-redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis-data:/data
+  #   restart: unless-stopped
+  #   command: redis-server --appendonly yes
+  #   networks:
+  #     - galaksio-network
 
   # Optional: PostgreSQL for advanced features (if needed)
-  postgres:
-    image: postgres:15-alpine
-    container_name: galaksio-postgres
-    environment:
-      - POSTGRES_DB=galaksio
-      - POSTGRES_USER=galaksio
-      - POSTGRES_PASSWORD=galaksio_password
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    restart: unless-stopped
-    networks:
-      - galaksio-network
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: galaksio-postgres
+  #   environment:
+  #     - POSTGRES_DB=galaksio
+  #     - POSTGRES_USER=galaksio
+  #     - POSTGRES_PASSWORD=galaksio_password
+  #   volumes:
+  #     - postgres-data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   restart: unless-stopped
+  #   networks:
+  #     - galaksio-network
 
 volumes:
   galaksio-data:

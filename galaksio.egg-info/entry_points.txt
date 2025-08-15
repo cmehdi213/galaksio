@@ -1,0 +1,2 @@
+[console_scripts]
+galaksio = server.launch_server:main
