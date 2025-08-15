@@ -8,3 +8,5 @@ server/conf/server.cfg_back
 *.pyc
 .idea
 server/launch_server.pid
+venv/
+*.egg-info/
