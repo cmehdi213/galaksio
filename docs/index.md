@@ -3,24 +3,26 @@
 </div>
 
 
-# Galaksio, an easy to use GUI for running Galaxy workflows.
+# Galaksio 2 - A Modern Galaxy Simplified Interface
 
 **Welcome to the Galaksio documentation.**
 
-**Galaksio** is a web tool that provides a simple but complete UI for using Galaxy for biologists that require bioinformatical workflows to complete their researching.
+**Galaksio** is a modern, responsive web interface for running Galaxy workflows with an enhanced user experience and accessibility. This project is a fork of the original Galaksio, adapted to modern web design and development standards, and with a focus on compatibility with Galaxy 24.0+.
 
-Galaksio has been developed by the [SLU Global Bioinformatics Centre](http://sgbc.slu.se/) at the Sveriges lantbruksuniversitet (Swedish University of Agricultural Sciences).
-This project is part of the B3Africa Project [http://www.b3africa.org/](http://www.b3africa.org/), which has received funding from the European Union’s Horizon 2020 research and innovation programme.
+This documentation will guide you through the features of Galaksio, from basic setup to advanced features like the new paired-reads manager.
 
-## Contact
+## About this fork
 
-** Rafael Hernández de Diego, PhD Student **, Main Developer.
+This version of Galaksio has been updated by [cmehdi213](https://github.com/cmehdi213) to include:
 
-** Tomas Klingström, PhD Student **, B3Africa WP4 leader.
+- A fully responsive, mobile-first interface.
+- Dark mode support.
+- Progressive Web App (PWA) capabilities.
+- Compatibility with Galaxy 24.0 and newer.
+- A new Paired Reads Management feature.
+- And many other technical and user experience improvements.
 
-** Prof. Erik Bongcam-Rudloff **, Head Genomics of the SLU Global Bioinformatics Centre.
-
-For any question on Galaksio, you can mail us to [rafael.hernandez.de.diego@slu.se](mailto:rafael.hernandez.de.diego@slu.se).
+For information about the original Galaksio project, please visit the [original repository](https://github.com/galaxyproject/galaksio).
 
 <div class="imageContainer" style="text-align:center; font-size:10px; color:#898989" >
     <img src="logoB3Africa400x300.jpg" title=""/>

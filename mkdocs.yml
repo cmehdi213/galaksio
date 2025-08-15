@@ -11,6 +11,7 @@ pages:
 - ['3_3_histories.md', 'Histories and datasets', 'Managing dataset collections']
 - ['4_1_workflows.md', 'Workflows', 'Browsing workflows']
 - ['4_2_workflows.md', 'Workflows', 'Running a workflow']
+- ['user-guide/paired-reads-guide.md', 'Features', 'Paired Reads Management']
 - ['5_use_case.md', 'Use case', 'Example of use']
 - ['6_license.md', 'About', 'License']
 theme: readthedocs
