@@ -150,12 +150,17 @@ class GalaxyAPIVerifier:
             logger.warning(f"Collections endpoint check failed: {e}")
             # This might not be available in all Galaxy instances
     
+    @property
+    def is_galaxy_25_plus(self) -> bool:
+        """Check if Galaxy version is 25.0 or higher."""
+        return self.galaxy_version and self.galaxy_version.startswith('25.')
+
     def get_compatibility_report(self) -> Dict[str, Any]:
         """Get a comprehensive compatibility report."""
         return {
             'galaxy_version': self.galaxy_version,
             'api_version': self.api_version,
-            'is_galaxy_25_plus': self.galaxy_version and self.galaxy_version.startswith('25.'),
+            'is_galaxy_25_plus': self.is_galaxy_25_plus,
             'compatibility_issues': self.compatibility_issues,
             'issues_count': len(self.compatibility_issues),
             'is_compatible': len(self.compatibility_issues) == 0,
