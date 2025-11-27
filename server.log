@@ -1,0 +1,43 @@
+2025-11-27 16:05:05,487 - server - INFO - Galaksio Server initialized with enhanced security features
+2025-11-27 16:05:05,499 - server - INFO - All routes configured successfully
+2025-11-27 16:05:05,500 - server - INFO - Background tasks started
+2025-11-27 16:05:05,502 - server - INFO - Galaksio Server initialized with enhanced security features
+2025-11-27 16:05:05,515 - server - INFO - All routes configured successfully
+2025-11-27 16:05:05,515 - server - INFO - Background tasks started
+2025-11-27 16:05:22,230 - server - INFO - Galaksio Server initialized with enhanced security features
+2025-11-27 16:05:22,243 - server - INFO - All routes configured successfully
+2025-11-27 16:05:22,243 - server - INFO - Background tasks started
+2025-11-27 16:05:22,245 - server - INFO - Galaksio Server initialized with enhanced security features
+2025-11-27 16:05:22,259 - server - INFO - All routes configured successfully
+2025-11-27 16:05:22,260 - server - INFO - Background tasks started
+2025-11-27 16:05:22,263 - server - INFO - Starting Galaksio Server on 0.0.0.0:8081
+2025-11-27 16:05:22,263 - server - INFO - Galaxy server: https://usegalaxy.eu
+2025-11-27 16:05:22,263 - server - INFO - Debug mode: True
+2025-11-27 16:05:22,279 - werkzeug - WARNING -  * Debugger is active!
+2025-11-27 16:05:22,279 - werkzeug - INFO -  * Debugger PIN: 132-491-319
+2025-11-27 16:05:51,864 - server - INFO - Galaksio Server initialized with enhanced security features
+2025-11-27 16:05:51,876 - server - INFO - All routes configured successfully
+2025-11-27 16:05:51,876 - server - INFO - Background tasks started
+2025-11-27 16:05:51,879 - server - INFO - Galaksio Server initialized with enhanced security features
+2025-11-27 16:05:51,890 - server - INFO - All routes configured successfully
+2025-11-27 16:05:51,891 - server - INFO - Background tasks started
+2025-11-27 16:05:51,894 - server - INFO - Starting Galaksio Server on 0.0.0.0:8081
+2025-11-27 16:05:51,894 - server - INFO - Galaxy server: https://usegalaxy.org/
+2025-11-27 16:05:51,894 - server - INFO - Debug mode: True
+2025-11-27 16:05:51,911 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8081
+ * Running on http://192.168.0.2:8081
+2025-11-27 16:05:51,911 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-27 16:05:51,912 - werkzeug - INFO -  * Restarting with stat
+2025-11-27 16:05:52,470 - server - INFO - Galaksio Server initialized with enhanced security features
+2025-11-27 16:05:52,482 - server - INFO - All routes configured successfully
+2025-11-27 16:05:52,483 - server - INFO - Background tasks started
+2025-11-27 16:05:52,485 - server - INFO - Galaksio Server initialized with enhanced security features
+2025-11-27 16:05:52,496 - server - INFO - All routes configured successfully
+2025-11-27 16:05:52,497 - server - INFO - Background tasks started
+2025-11-27 16:05:52,500 - server - INFO - Starting Galaksio Server on 0.0.0.0:8081
+2025-11-27 16:05:52,500 - server - INFO - Galaxy server: https://usegalaxy.eu
+2025-11-27 16:05:52,500 - server - INFO - Debug mode: True
+2025-11-27 16:05:52,513 - werkzeug - WARNING -  * Debugger is active!
+2025-11-27 16:05:52,513 - werkzeug - INFO -  * Debugger PIN: 132-491-319
